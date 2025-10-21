@@ -1,6 +1,8 @@
 # Liturgical Calendar MCP Server
 
-A **Model Context Protocol (MCP)** server that exposes the [Liturgical Calendar API](https://github.com/Liturgical-Calendar/LiturgicalCalendarAPI) as a structured toolset for AI agents. This enables compliant AI systems (like ChatGPT MCP clients, LangChain agents, and custom LLM runtimes) to reason over liturgical dates, seasons, feasts, saints, and liturgical rankings with full contextual intelligence.
+A **Model Context Protocol (MCP)** server that exposes the [Liturgical Calendar API](https://github.com/Liturgical-Calendar/LiturgicalCalendarAPI)
+as a structured toolset for AI agents. This enables compliant AI systems (like ChatGPT MCP clients, LangChain agents, and custom LLM runtimes)
+to reason over liturgical dates, seasons, feasts, saints, and liturgical rankings with full contextual intelligence.
 
 ## 🌟 Key Features
 
@@ -11,7 +13,8 @@ A **Model Context Protocol (MCP)** server that exposes the [Liturgical Calendar 
 
 ## 📘 What is MCP?
 
-The **Model Context Protocol** is an emerging open standard that allows language models to interface with external tools, APIs, or data sources using a uniform schema. MCP servers expose “tools” that LLMs can discover and call programmatically.
+The **Model Context Protocol** is an emerging open standard that allows language models to interface with external tools, APIs, or data sources using a uniform schema.
+MCP servers expose “tools” that LLMs can discover and call programmatically.
 
 > *This repository is an MCP server that exposes the Liturgical Calendar as a tool the AI can reason about.*
 
