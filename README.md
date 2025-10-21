@@ -61,3 +61,11 @@ To run the server:
 ```bash
 python main.py
 ```
+
+## 🙏 Mission
+
+This MCP server is part of a broader initiative to make the liturgical, biblical, and canonical patrimony of the Church accessible to AI systems in a faithful and structured way.
+
+> “Missionaries have always gone with Christ to new frontiers, while the Holy Spirit pushed and preceded them” (SR 17c).
+> We can only regard this so-called new continent with the zeal of a Francis Xavier or a Mother Cabrini.
+> — Cardinal Michael Czerny, [A New World and a New Mission](https://www.humandevelopment.va/content/dam/sviluppoumano/news/2024-news/09-settembre/missione-digitale/pdf/A-new-World-and-a-new-Mission.pdf)
