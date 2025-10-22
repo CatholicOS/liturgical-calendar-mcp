@@ -168,7 +168,7 @@ python litcal_server.py
 # Ctrl+C to stop (you may have to do so a few times)
 
 # Test MCP protocol
-python test_mcp.py | python litcal_server.py
+python test_mcp.py | python litcal_server.py | jq
 # This should output, in JSON format, the tools made available by the MCP server
 ```
 
