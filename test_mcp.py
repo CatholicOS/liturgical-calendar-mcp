@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import json
+import sys
 
+# Define MCP messages to send
 messages = [
     {
         "jsonrpc": "2.0",
@@ -22,4 +24,6 @@ messages = [
 
 # Send messages to server
 for msg in messages:
-    print(json.dumps(msg, indent=4), flush=True)
+    # print as compact JSON on a single line
+    sys.stdout.write(json.dumps(msg) + "\n")
+    sys.stdout.flush()
