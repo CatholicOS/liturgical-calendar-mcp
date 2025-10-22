@@ -21,6 +21,6 @@ MD041: false
 MD046:
   style: fenced
 MD029:
-  style: one
+  style: one_or_ordered
 MD025:
   front_matter_title: ""
