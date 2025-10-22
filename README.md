@@ -169,7 +169,7 @@ python litcal_server.py
 
 # Test MCP protocol
 python test_mcp.py | python litcal_server.py | jq
-# This should output, in JSON format, the tools made available by the MCP server
+# This should output, in pretty-printed JSON format, the tools made available by the MCP server
 ```
 
 ### Adding New Tools
