@@ -41,7 +41,7 @@ def format_calendar_summary(data):
     if not data or 'litcal' not in data:
         return "No calendar data available"
 
-    litcal = data['litcal']
+    liturgical_events = data['litcal']
     settings = data.get('settings', {})
 
     lines = []
@@ -57,17 +57,15 @@ def format_calendar_summary(data):
             lines.append(f"Diocesan Calendar: {settings['diocesan_calendar']}")
         lines.append("")
 
-    liturgical_events = litcal.items()
-
     for event_data in liturgical_events[:50]:
         lines.append(format_event(event_data))
         lines.append("")
 
-    if len(litcal) > 50:
-        lines.append(f"... and {len(litcal) - 50} more events")
+    if len(liturgical_events) > 50:
+        lines.append(f"... and {len(liturgical_events) - 50} more events")
 
     lines.append("=" * 60)
-    lines.append(f"Total events: {len(litcal)}")
+    lines.append(f"Total events: {len(liturgical_events)}")
 
     return "\n".join(lines)
 
@@ -262,84 +260,84 @@ async def list_available_calendars() -> str:
             logger.error("JSON decoding error: %s", e)
             return f"❌ Error decoding response: {str(e)}"
 
-@mcp.tool()
-async def get_liturgical_events(calendar_type: str = "general", calendar_id: str = "", locale: str = "en") -> str:
-    """Retrieve all possible liturgical events for a calendar (general, national, or diocesan)."""
-    logger.info("Fetching liturgical events for %s calendar", calendar_type)
+# @mcp.tool()
+# async def get_liturgical_events(calendar_type: str = "general", calendar_id: str = "", locale: str = "en") -> str:
+#     """Retrieve all possible liturgical events for a calendar (general, national, or diocesan)."""
+#     logger.info("Fetching liturgical events for %s calendar", calendar_type)
 
-    calendar_type = calendar_type.strip().lower()
+#     calendar_type = calendar_type.strip().lower()
 
-    if calendar_type == "general":
-        url = f"{API_BASE_URL}/events"
-    elif calendar_type == "nation":
-        if not calendar_id.strip():
-            return "❌ Error: Nation code is required for national calendar (e.g., IT, US, NL, VA, CA)"
-        url = f"{API_BASE_URL}/events/nation/{calendar_id.strip().upper()}"
-    elif calendar_type == "diocese":
-        if not calendar_id.strip():
-            return "❌ Error: Diocese ID is required for diocesan calendar (e.g., rome_it, boston_us)"
-        url = f"{API_BASE_URL}/events/diocese/{calendar_id.strip().lower()}"
-    else:
-        return "❌ Error: calendar_type must be 'general', 'nation', or 'diocese'"
+#     if calendar_type == "general":
+#         url = f"{API_BASE_URL}/events"
+#     elif calendar_type == "nation":
+#         if not calendar_id.strip():
+#             return "❌ Error: Nation code is required for national calendar (e.g., IT, US, NL, VA, CA)"
+#         url = f"{API_BASE_URL}/events/nation/{calendar_id.strip().upper()}"
+#     elif calendar_type == "diocese":
+#         if not calendar_id.strip():
+#             return "❌ Error: Diocese ID is required for diocesan calendar (e.g., rome_it, boston_us)"
+#         url = f"{API_BASE_URL}/events/diocese/{calendar_id.strip().lower()}"
+#     else:
+#         return "❌ Error: calendar_type must be 'general', 'nation', or 'diocese'"
 
-    headers = {
-        "Accept": "application/json",
-        "Accept-Language": locale if locale.strip() else "en"
-    }
+#     headers = {
+#         "Accept": "application/json",
+#         "Accept-Language": locale if locale.strip() else "en"
+#     }
 
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.get(url, headers=headers, timeout=DEFAULT_TIMEOUT)
-            response.raise_for_status()
-            data = response.json()
+#     async with httpx.AsyncClient() as client:
+#         try:
+#             response = await client.get(url, headers=headers, timeout=DEFAULT_TIMEOUT)
+#             response.raise_for_status()
+#             data = response.json()
 
-            if 'litcal_events' not in data:
-                return "❌ No events data in response"
+#             if 'litcal_events' not in data:
+#                 return "❌ No events data in response"
 
-            events = data['litcal_events']
+#             events = data['litcal_events']
 
-            lines = []
-            lines.append("=" * 60)
-            lines.append(f"📖 LITURGICAL EVENTS ({calendar_type.upper()})")
-            lines.append("=" * 60)
-            lines.append("")
+#             lines = []
+#             lines.append("=" * 60)
+#             lines.append(f"📖 LITURGICAL EVENTS ({calendar_type.upper()})")
+#             lines.append("=" * 60)
+#             lines.append("")
 
-            sorted_events = sorted(events.items(), key=lambda x: (x[1].get('month', 0), x[1].get('day', 0)))
+#             sorted_events = sorted(events.items(), key=lambda x: (x[1].get('month', 0), x[1].get('day', 0)))
 
-            for event_key, event_data in sorted_events[:100]:
-                month = event_data.get('month', 0)
-                day = event_data.get('day', 0)
-                name = event_data.get('name', 'Unknown')
-                grade_map = {
-                    0: "Weekday",
-                    1: "Commemoration",
-                    2: "Optional Memorial",
-                    3: "Memorial",
-                    4: "Feast",
-                    5: "Feast of the Lord",
-                    6: "Solemnity",
-                    7: "Higher Solemnity"
-                }
-                grade = grade_map.get(event_data.get('grade', 0), "Unknown")
+#             for event_key, event_data in sorted_events[:100]:
+#                 month = event_data.get('month', 0)
+#                 day = event_data.get('day', 0)
+#                 name = event_data.get('name', 'Unknown')
+#                 grade_map = {
+#                     0: "Weekday",
+#                     1: "Commemoration",
+#                     2: "Optional Memorial",
+#                     3: "Memorial",
+#                     4: "Feast",
+#                     5: "Feast of the Lord",
+#                     6: "Solemnity",
+#                     7: "Higher Solemnity"
+#                 }
+#                 grade = grade_map.get(event_data.get('grade', 0), "Unknown")
 
-                lines.append(f"📅 {name}")
-                lines.append(f"   Key: {event_key}")
-                lines.append(f"   Date: {month}/{day}")
-                lines.append(f"   Grade: {grade}")
-                lines.append("")
+#                 lines.append(f"📅 {name}")
+#                 lines.append(f"   Key: {event_key}")
+#                 lines.append(f"   Date: {month}/{day}")
+#                 lines.append(f"   Grade: {grade}")
+#                 lines.append("")
 
-            if len(events) > 100:
-                lines.append(f"... and {len(events) - 100} more events")
+#             if len(events) > 100:
+#                 lines.append(f"... and {len(events) - 100} more events")
 
-            lines.append("=" * 60)
-            lines.append(f"Total events: {len(events)}")
+#             lines.append("=" * 60)
+#             lines.append(f"Total events: {len(events)}")
 
-            return "✅ " + "\n".join(lines)
-        except httpx.HTTPStatusError as e:
-            return f"❌ API Error: {e.response.status_code} - {e.response.text}"
-        except httpx.RequestError as e:
-            logger.error("Network error fetching events: %s", e)
-            return f"❌ Network error: {str(e)}"
+#             return "✅ " + "\n".join(lines)
+#         except httpx.HTTPStatusError as e:
+#             return f"❌ API Error: {e.response.status_code} - {e.response.text}"
+#         except httpx.RequestError as e:
+#             logger.error("Network error fetching events: %s", e)
+#             return f"❌ Network error: {str(e)}"
 
 # === SERVER STARTUP ===
 
