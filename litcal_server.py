@@ -224,7 +224,7 @@ async def list_available_calendars() -> str:
                 if 'national_calendars' in metadata:
                     lines.append("🌍 NATIONAL CALENDARS:")
                     lines.append("")
-                    for item in metadata['national_calendars'].items():
+                    for item in metadata.get('national_calendars', []):
                         calendar_id = item.get('calendar_id', 'Unknown')
                         lines.append(f"  • {calendar_id}: {pycountry.countries.get(alpha_2=calendar_id).name}")
                         if 'locales' in item:
@@ -234,7 +234,7 @@ async def list_available_calendars() -> str:
                 if 'diocesan_calendars' in metadata:
                     lines.append("⛪ DIOCESAN CALENDARS:")
                     lines.append("")
-                    for item in metadata['diocesan_calendars'].items():
+                    for item in metadata.get('diocesan_calendars', []):
                         calendar_id = item.get('calendar_id', 'Unknown')
                         diocese_name = item.get('diocese', 'Unknown')
                         lines.append(f"  • {calendar_id}: {diocese_name}")
