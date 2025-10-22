@@ -56,9 +56,9 @@ def format_calendar_summary(data):
             lines.append(f"Diocesan Calendar: {settings['diocesan_calendar']}")
         lines.append("")
 
-    sorted_events = sorted(litcal.items(), key=lambda x: x[1].get('date', ''))
+    liturgical_events = litcal.items()
 
-    for event_data in sorted_events[:50]:
+    for event_data in liturgical_events[:50]:
         lines.append(format_event(event_data))
         lines.append("")
 
