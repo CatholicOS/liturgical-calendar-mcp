@@ -165,10 +165,11 @@ python3.12 -m venv venv
 source venv/bin/activate
 pip install --no-cache-dir -r requirements.txt
 python litcal_server.py
-# Ctrl+C to stop
+# Ctrl+C to stop (you may have to do so a few times)
 
 # Test MCP protocol
-echo '{"jsonrpc":"2.0","method":"tools/list","id":1}' | python litcal_server.py
+python test_mcp.py | python litcal_server.py
+# This should output, in JSON format, the tools made available by the MCP server
 ```
 
 ### Adding New Tools
