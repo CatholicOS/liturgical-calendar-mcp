@@ -30,18 +30,8 @@ def format_event(event_data):
     """Format a single liturgical event for display."""
     name = event_data.get('name', 'Unknown')
     date = event_data.get('date', 'Unknown')
-    color = ', '.join(event_data.get('color', []))
-    grade_map = {
-        0: "Weekday",
-        1: "Commemoration",
-        2: "Optional Memorial",
-        3: "Memorial",
-        4: "Feast",
-        5: "Feast of the Lord",
-        6: "Solemnity",
-        7: "Higher Solemnity"
-    }
-    grade = grade_map.get(event_data.get('grade', 0), "Unknown")
+    color = ', '.join(event_data.get('color_lcl', []))
+    grade = event_data.get('grade_lcl', 'Unknown')
 
     return f"📅 {name}\n   Date: {date}\n   Grade: {grade}\n   Color: {color}"
 

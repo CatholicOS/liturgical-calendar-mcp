@@ -1,7 +1,7 @@
 # Liturgical Calendar MCP Server
 
 A **Model Context Protocol (MCP)** server that provides access to the [Roman Catholic Liturgical Calendar API](https://github.com/Liturgical-Calendar/LiturgicalCalendarAPI)
-allowing retrieval of liturgical calendar data for any year, nation, or diocese.
+allowing retrieval of liturgical calendar data for any year, or for various nations, or dioceses.
 
 The MCP server is a secure interface for AI assistants to access liturgical calendar data, providing a unified interface
 as a structured toolset for AI agents. This enables compliant AI systems (like ChatGPT MCP clients, LangChain agents, and custom LLM runtimes)
@@ -40,7 +40,7 @@ It supports querying the General Roman Calendar, national calendars, and diocesa
    You should now see the "MCP Toolkit" icon in the Docker Desktop left sidebar.
    Perhaps try enabling a tool from the catalog as a proof of concept, for example "Obsidian".
    Then connect the MCP Toolkit to a client like Claude Desktop.
-   Now after restarting Claude Desktop, when clicking on the "Tools" icon below the chat prompt,
+   After restarting Claude Desktop, when clicking on the "Tools" icon below the chat prompt,
    you should see an "MCP_DOCKER" category, and clicking on the arrow next to that
    you should see available tool calls (for example obsidian tool calls if you enabled the Obsidian tool from the Docker MCP catalog).
 
