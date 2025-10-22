@@ -8,6 +8,7 @@ import logging
 from datetime import datetime
 import httpx
 from mcp.server.fastmcp import FastMCP
+import pycountry
 
 # Configure logging to stderr
 logging.basicConfig(
@@ -75,7 +76,7 @@ def format_calendar_summary(data):
 @mcp.tool()
 async def get_general_calendar(year: str = "", locale: str = "en") -> str:
     """Retrieve the General Roman Calendar for a specific year with optional locale."""
-    logger.info("Fetching General Roman Calendar for year %s", year)
+    logger.info("Fetching General Roman Calendar for year %s and locale %s", year, locale)
 
     if not year.strip():
         year = str(datetime.now().year)
@@ -112,7 +113,7 @@ async def get_general_calendar(year: str = "", locale: str = "en") -> str:
 @mcp.tool()
 async def get_national_calendar(nation: str = "", year: str = "", locale: str = "en") -> str:
     """Retrieve the liturgical calendar for a specific nation and year, and optional locale."""
-    logger.info("Fetching National Calendar for %s year %s", nation, year)
+    logger.info("Fetching National Calendar for %s for the year %s (locale %s)", nation, year, locale)
 
     if not nation.strip():
         return "❌ Error: Nation code is required (e.g., IT, US, NL, VA, CA)"
@@ -155,11 +156,11 @@ async def get_national_calendar(nation: str = "", year: str = "", locale: str = 
 
 @mcp.tool()
 async def get_diocesan_calendar(diocese: str = "", year: str = "", locale: str = "en") -> str:
-    """Retrieve the liturgical calendar for a specific diocese and year."""
-    logger.info("Fetching Diocesan Calendar for %s year %s", diocese, year)
+    """Retrieve the liturgical calendar for a specific diocese and year, and optional locale."""
+    logger.info("Fetching Diocesan Calendar for %s for the year %s (locale %s)", diocese, year, locale)
 
     if not diocese.strip():
-        return "❌ Error: Diocese ID is required (e.g., rome_it, boston_us)"
+        return "❌ Error: Diocese ID is required (e.g., romamo_it, boston_us)"
 
     diocese = diocese.strip().lower()
 
@@ -223,23 +224,29 @@ async def list_available_calendars() -> str:
                 if 'national_calendars' in metadata:
                     lines.append("🌍 NATIONAL CALENDARS:")
                     lines.append("")
-                    for nation, info in metadata['national_calendars'].items():
-                        lines.append(f"  • {nation}: {info.get('name', 'Unknown')}")
-                        if 'locales' in info:
-                            lines.append(f"    Locales: {', '.join(info['locales'])}")
+                    for item in metadata['national_calendars'].items():
+                        calendar_id = item.get('calendar_id', 'Unknown')
+                        lines.append(f"  • {calendar_id}: {pycountry.countries.get(alpha_2=calendar_id).name}")
+                        if 'locales' in item:
+                            lines.append(f"    Locales: {', '.join(item['locales'])}")
                     lines.append("")
 
                 if 'diocesan_calendars' in metadata:
                     lines.append("⛪ DIOCESAN CALENDARS:")
                     lines.append("")
-                    for diocese, info in metadata['diocesan_calendars'].items():
-                        lines.append(f"  • {diocese}: {info.get('name', 'Unknown')}")
-                        if 'nation' in info:
-                            lines.append(f"    Nation: {info['nation']}")
+                    for item in metadata['diocesan_calendars'].items():
+                        calendar_id = item.get('calendar_id', 'Unknown')
+                        diocese_name = item.get('diocese', 'Unknown')
+                        lines.append(f"  • {calendar_id}: {diocese_name}")
+                        nation_id = item.get('nation', 'Unknown')
+                        nation = pycountry.countries.get(alpha_2=nation_id).name
+                        lines.append(f"    Nation: {nation}")
+                        if 'locales' in item:
+                            lines.append(f"    Locales: {', '.join(item['locales'])}")
                     lines.append("")
 
                 if 'locales' in metadata:
-                    lines.append("🌐 AVAILABLE LOCALES:")
+                    lines.append("🌐 AVAILABLE LOCALES for the General Roman Calendar:")
                     lines.append(f"  {', '.join(metadata['locales'])}")
                     lines.append("")
 
