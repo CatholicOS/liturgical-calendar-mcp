@@ -69,6 +69,16 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+.vscode/
+*.code-workspace
+
 # macOS
 .DS_Store
 
