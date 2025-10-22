@@ -30,20 +30,34 @@ It supports querying the General Roman Calendar, national calendars, and diocesa
 
 ## Installation
 
-1. **Clone the repository**
+1. **Install Docker Desktop**
 
-```bash
-git clone https://github.com/CatholicOS/liturgical-calendar-mcp.git
-cd liturgical-calendar-mcp
-```
+   Download and install Docker Desktop from [https://www.docker.com/products/docker-desktop/](https://www.docker.com/products/docker-desktop/).
 
-2. **Build the Docker image**
+2. **Enable Docker MCP Toolkit**
 
-```bash
-docker build -t liturgical-calendar-mcp .
-```
+   Open the Docker Desktop settings and enable the MCP Toolkit under the "Beta Features" tab.
+   You should now see the "MCP Toolkit" icon in the Docker Desktop left sidebar.
+   Perhaps try enabling a tool from the catalog as a proof of concept, for example "Obsidian".
+   Then connect the MCP Toolkit to a client like Claude Desktop.
+   Now after restarting Claude Desktop, when clicking on the "Tools" icon below the chat prompt,
+   you should see an "MCP_DOCKER" category, and clicking on the arrow next to that
+   you should see available tool calls (for example obsidian tool calls if you enabled the Obsidian tool from the Docker MCP catalog).
 
-3. **Update the Docker Desktop MCP catalog**
+3. **Clone the repository**
+
+   ```bash
+   git clone https://github.com/CatholicOS/liturgical-calendar-mcp.git
+   cd liturgical-calendar-mcp
+   ```
+
+4. **Build the Docker image**
+
+   ```bash
+   docker build -t liturgical-calendar-mcp .
+   ```
+
+5. **Update the Docker Desktop MCP catalog**
 
 Edit the file `%USERPROFILE%\.docker\mcp\catalogs\docker-mcp.yaml`, and paste this at the end:
 
@@ -109,14 +123,15 @@ In Claude Desktop, you can ask:
 ## Architecture
 
 ```mermaid
-Claude Desktop → MCP Gateway → Liturgical Calendar MCP Server → Liturgical Calendar API
-                                                                 (litcal.johnromanodorazio.com)
+flowchart LR
+  ClaudeDesktop --> MCPGateway --> LiturgicalCalendarMCPServer --> LiturgicalCalendarAPI
 ```
 
 ## API Information
 
 - **Base URL**: [https://litcal.johnromanodorazio.com/api/dev](https://litcal.johnromanodorazio.com/api/dev)
-- **Documentation**: Based on OpenAPI 3.1.0 specification
+- **Documentation**: [openapi.json](https://raw.githubusercontent.com/Liturgical-Calendar/LiturgicalCalendarAPI/refs/heads/development/jsondata/schemas/openapi.json)
+   Based on OpenAPI 3.1.0 specification
 - **License**: Apache 2.0
 - **Maintainer**: Rev. John R. D'Orazio
 - **Supported Years**: 1970-9999
@@ -172,14 +187,13 @@ echo '{"jsonrpc":"2.0","method":"tools/list","id":1}' | python litcal_server.py
 
 - Verify Docker image built successfully: `docker images | grep litcal`
 - Check catalog and registry files for correct formatting
-- Ensure Claude Desktop config includes custom catalog
+- Ensure Docker Desktop MCP config files include the `litcal` tool
 - Restart Claude Desktop completely
 
 ### Connection Errors
 
 - Verify internet connectivity
 - Check API status at [https://litcal.johnromanodorazio.com/api/dev](https://litcal.johnromanodorazio.com/api/dev)
-- Review Docker logs: `docker logs <container_name>`
 
 ### Invalid Calendar IDs
 

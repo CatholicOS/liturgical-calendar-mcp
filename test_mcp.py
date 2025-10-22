@@ -22,4 +22,4 @@ messages = [
 
 # Send messages to server
 for msg in messages:
-    print(json.dumps(msg), flush=True)
+    print(json.dumps(msg, indent=4), flush=True)
