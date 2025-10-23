@@ -1,0 +1,32 @@
+name: Lint and Format Code
+
+on: [push, workflow_dispatch]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12", "3.13", "3.14"]
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: pip
+
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip
+        pip install -r requirements.txt -r requirements-dev.txt
+
+    - name: Check code formatting with Black
+      run: black . --check
+
+    - name: Lint code with Flake8
+      run: flake8 .
+
+    - name: Analyse code with Pylint
+      run: pylint $(git ls-files '*.py')

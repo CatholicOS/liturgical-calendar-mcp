@@ -1,0 +1,15 @@
+[flake8]
+# Folders to exclude from linting
+exclude = venv, .venv, __pycache__, build, dist
+
+# Maximum line length — should match Black
+max-line-length = 180
+
+# Ignore conflicts with Black formatting
+extend-ignore = E203, W503
+
+# Optional: show the source of errors/warnings
+show-source = True
+
+# Optional: limit complexity if desired
+max-complexity = 15
