@@ -21,7 +21,9 @@ def send_initialize_message(message_id: int = 1) -> None:
     print(json.dumps(msg), flush=True)
 
 
-def send_tool_call(tool_name: str, arguments: dict[str, Any] | None = None, message_id: int = 2) -> None:
+def send_tool_call(
+    tool_name: str, arguments: dict[str, Any] | None = None, message_id: int = 2
+) -> None:
     """Send a tool call message."""
     msg = {
         "jsonrpc": "2.0",
