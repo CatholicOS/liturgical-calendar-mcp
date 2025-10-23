@@ -127,44 +127,35 @@ async def get_national_calendar(
         locale,
     )
 
-    if not nation.strip():
-        return "❌ Error: Nation code is required (e.g., IT, US, NL, VA, CA)"
-
-    nation = nation.strip().upper()
-
-    if not year.strip():
-        year = str(datetime.now().year)
-
     try:
-        year_int = int(year)
-        if year_int < 1970 or year_int > 9999:
-            return "❌ Error: Year must be between 1970 and 9999"
-    except ValueError:
-        return f"❌ Error: Invalid year value: {year}"
+        # Validate and normalize inputs
+        nation = _validate_nation(nation)
+        year_int = _validate_year(year)
 
-    url = f"{API_BASE_URL}/calendar/nation/{nation}/{year}"
+        # Make API request
+        url = f"{API_BASE_URL}/calendar/nation/{nation}/{year_int}"
+        headers = {
+            "Accept": "application/json",
+            "Accept-Language": locale if locale.strip() else "en",
+        }
 
-    headers = {
-        "Accept": "application/json",
-        "Accept-Language": locale if locale.strip() else "en",
-    }
-
-    async with httpx.AsyncClient() as client:
-        try:
+        async with httpx.AsyncClient() as client:
             response = await client.get(url, headers=headers, timeout=DEFAULT_TIMEOUT)
             response.raise_for_status()
             data = response.json()
             return f"✅ National Calendar for {nation} ({year}):\n\n{format_calendar_summary(data)}"
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == 404:
-                return f"❌ National calendar not found for: {nation}\n💡 Available nations: IT, US, NL, VA, CA"
-            return f"❌ API Error: {e.response.status_code} - {e.response.text}"
-        except httpx.RequestError as e:
-            logger.error("Network error fetching national calendar: %s", e)
-            return f"❌ Network error: {str(e)}"
-        except ValueError as e:
-            logger.error("JSON decoding error: %s", e)
-            return f"❌ Error decoding response: {str(e)}"
+    except ValueError as e:
+        logger.error("Error: %s", e)
+        return f"❌ Error: {str(e)}"
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            logger.error("National calendar not found for nation: %s", nation)
+            return f"❌ National calendar not found for: {nation}\n💡 Available nations: IT, US, NL, VA, CA"
+        logger.error("HTTP error fetching national calendar: %s", e)
+        return f"❌ HTTP error fetching national calendar: {e.response.status_code} - {e.response.text}"
+    except httpx.RequestError as e:
+        logger.error("Network error fetching national calendar: %s", e)
+        return f"❌ Network error fetching national calendar: {str(e)}"
 
 
 @mcp.tool()
@@ -179,45 +170,35 @@ async def get_diocesan_calendar(
         locale,
     )
 
-    if not diocese.strip():
-        return "❌ Error: Diocese ID is required (e.g., romamo_it, boston_us)"
-
-    diocese = diocese.strip().lower()
-
-    if not year.strip():
-        year = str(datetime.now().year)
-
     try:
-        year_int = int(year)
-        if year_int < 1970 or year_int > 9999:
-            return "❌ Error: Year must be between 1970 and 9999"
-    except ValueError:
-        return f"❌ Error: Invalid year value: {year}"
+        # Validate and normalize inputs
+        diocese = _validate_diocese(diocese)
+        year_int = _validate_year(year)
 
-    url = f"{API_BASE_URL}/calendar/diocese/{diocese}/{year}"
+        # Make API request
+        url = f"{API_BASE_URL}/calendar/diocese/{diocese}/{year_int}"
+        headers = {
+            "Accept": "application/json",
+            "Accept-Language": locale if locale.strip() else "en",
+        }
 
-    headers = {
-        "Accept": "application/json",
-        "Accept-Language": locale if locale.strip() else "en",
-    }
-
-    async with httpx.AsyncClient() as client:
-        try:
+        async with httpx.AsyncClient() as client:
             response = await client.get(url, headers=headers, timeout=DEFAULT_TIMEOUT)
             response.raise_for_status()
             data = response.json()
             return f"✅ Diocesan Calendar for {diocese} ({year}):\n\n{format_calendar_summary(data)}"
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == 404:
-                return f"❌ Diocesan calendar not found for: {diocese}\n💡 Use list_available_calendars to see available dioceses"
-            logger.error("HTTP error fetching diocesan calendar: %s", e)
-            return f"❌ API Error: {e.response.status_code} - {e.response.text}"
-        except httpx.RequestError as e:
-            logger.error("Network error fetching diocesan calendar: %s", e)
-            return f"❌ Network error: {str(e)}"
-        except ValueError as e:
-            logger.error("JSON decoding error: %s", e)
-            return f"❌ Error decoding response: {str(e)}"
+    except ValueError as e:
+        logger.error("Error: %s", e)
+        return f"❌ Error: {str(e)}"
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            logger.error("Diocesan calendar not found for diocese: %s", diocese)
+            return f"❌ Diocesan calendar not found for: {diocese}\n💡 Available diocese ids: romamo_it, boston_us, charlo_ca"
+        logger.error("HTTP error fetching diocesan calendar: %s", e)
+        return f"❌ HTTP error fetching diocesan calendar: {e.response.status_code} - {e.response.text}"
+    except httpx.RequestError as e:
+        logger.error("Network error fetching diocesan calendar: %s", e)
+        return f"❌ Network error fetching diocesan calendar: {str(e)}"
 
 
 @mcp.tool()
@@ -286,86 +267,35 @@ async def list_available_calendars() -> str:
             return f"❌ Error decoding response: {str(e)}"
 
 
-# @mcp.tool()
-# async def get_liturgical_events(calendar_type: str = "general", calendar_id: str = "", locale: str = "en") -> str:
-#     """Retrieve all possible liturgical events for a calendar (general, national, or diocesan)."""
-#     logger.info("Fetching liturgical events for %s calendar", calendar_type)
+def _validate_nation(nation: str) -> str:
+    """Validate and normalize nation code."""
+    if not nation.strip():
+        raise ValueError("Nation code is required (e.g., IT, US, NL, VA, CA)")
+    return nation.strip().upper()
 
-#     calendar_type = calendar_type.strip().lower()
 
-#     if calendar_type == "general":
-#         url = f"{API_BASE_URL}/events"
-#     elif calendar_type == "nation":
-#         if not calendar_id.strip():
-#             return "❌ Error: Nation code is required for national calendar (e.g., IT, US, NL, VA, CA)"
-#         url = f"{API_BASE_URL}/events/nation/{calendar_id.strip().upper()}"
-#     elif calendar_type == "diocese":
-#         if not calendar_id.strip():
-#             return "❌ Error: Diocese ID is required for diocesan calendar (e.g., rome_it, boston_us)"
-#         url = f"{API_BASE_URL}/events/diocese/{calendar_id.strip().lower()}"
-#     else:
-#         return "❌ Error: calendar_type must be 'general', 'nation', or 'diocese'"
+def _validate_diocese(diocese: str) -> str:
+    """Validate and normalize diocese ID."""
+    if not diocese.strip():
+        raise ValueError("Diocese ID is required (e.g., romamo_it, boston_us)")
+    return diocese.strip().lower()
 
-#     headers = {
-#         "Accept": "application/json",
-#         "Accept-Language": locale if locale.strip() else "en"
-#     }
 
-#     async with httpx.AsyncClient() as client:
-#         try:
-#             response = await client.get(url, headers=headers, timeout=DEFAULT_TIMEOUT)
-#             response.raise_for_status()
-#             data = response.json()
+def _validate_year(year: str) -> int:
+    """Validate and normalize year value."""
+    if not year.strip():
+        return datetime.now().year
 
-#             if 'litcal_events' not in data:
-#                 return "❌ No events data in response"
+    try:
+        year_int = int(year)
+        if year_int < 1970 or year_int > 9999:
+            raise ValueError("Year must be between 1970 and 9999")
+        return year_int
+    except ValueError as e:
+        if "invalid literal" in str(e).lower():
+            raise ValueError(f"Invalid year value: {year}") from e
+        raise
 
-#             events = data['litcal_events']
-
-#             lines = []
-#             lines.append("=" * 60)
-#             lines.append(f"📖 LITURGICAL EVENTS ({calendar_type.upper()})")
-#             lines.append("=" * 60)
-#             lines.append("")
-
-#             sorted_events = sorted(events.items(), key=lambda x: (x[1].get('month', 0), x[1].get('day', 0)))
-
-#             for event_key, event_data in sorted_events[:100]:
-#                 month = event_data.get('month', 0)
-#                 day = event_data.get('day', 0)
-#                 name = event_data.get('name', 'Unknown')
-#                 grade_map = {
-#                     0: "Weekday",
-#                     1: "Commemoration",
-#                     2: "Optional Memorial",
-#                     3: "Memorial",
-#                     4: "Feast",
-#                     5: "Feast of the Lord",
-#                     6: "Solemnity",
-#                     7: "Higher Solemnity"
-#                 }
-#                 grade = grade_map.get(event_data.get('grade', 0), "Unknown")
-
-#                 lines.append(f"📅 {name}")
-#                 lines.append(f"   Key: {event_key}")
-#                 lines.append(f"   Date: {month}/{day}")
-#                 lines.append(f"   Grade: {grade}")
-#                 lines.append("")
-
-#             if len(events) > 100:
-#                 lines.append(f"... and {len(events) - 100} more events")
-
-#             lines.append("=" * 60)
-#             lines.append(f"Total events: {len(events)}")
-
-#             return "✅ " + "\n".join(lines)
-#         except httpx.HTTPStatusError as e:
-#             return f"❌ API Error: {e.response.status_code} - {e.response.text}"
-#         except httpx.RequestError as e:
-#             logger.error("Network error fetching events: %s", e)
-#             return f"❌ Network error: {str(e)}"
-
-# === SERVER STARTUP ===
 
 if __name__ == "__main__":
     logger.info("Starting Liturgical Calendar MCP server...")

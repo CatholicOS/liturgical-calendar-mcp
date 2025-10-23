@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+"""Simple test script sending JSON-RPC messages and printing responses."""
+
 import json
 import sys
 
