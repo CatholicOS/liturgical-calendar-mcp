@@ -82,37 +82,48 @@ async def get_general_calendar(year: str = "", locale: str = "en") -> str:
         "Fetching General Roman Calendar for year %s and locale %s", year, locale
     )
 
-    if not year.strip():
-        year = str(datetime.now().year)
-
     try:
-        year_int = int(year)
-        if year_int < 1970 or year_int > 9999:
-            return "❌ Error: Year must be between 1970 and 9999"
-    except ValueError:
-        return f"❌ Error: Invalid year value: {year}"
+        # Validate and normalize inputs
+        year_int = _validate_year(year)
 
-    url = f"{API_BASE_URL}/calendar/{year}"
+        # Make API request
+        url = f"{API_BASE_URL}/calendar/{year_int}"
+        headers = {
+            "Accept": "application/json",
+            "Accept-Language": locale if locale.strip() else "en",
+        }
 
-    headers = {
-        "Accept": "application/json",
-        "Accept-Language": locale if locale.strip() else "en",
-    }
-
-    async with httpx.AsyncClient() as client:
-        try:
+        async with httpx.AsyncClient() as client:
             response = await client.get(url, headers=headers, timeout=DEFAULT_TIMEOUT)
             response.raise_for_status()
             data = response.json()
             return f"✅ General Roman Calendar for {year}:\n\n{format_calendar_summary(data)}"
-        except httpx.HTTPStatusError as e:
-            return f"❌ API Error: {e.response.status_code} - {e.response.text}"
-        except httpx.RequestError as e:
-            logger.error("Network error fetching calendar: %s", e)
-            return f"❌ Network error: {str(e)}"
-        except ValueError as e:
-            logger.error("JSON decoding error: %s", e)
-            return f"❌ Error decoding response: {str(e)}"
+    except ValueError as e:
+        logger.error("Error: %s", e)
+        return f"❌ Error: {str(e)}"
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            logger.error(
+                "General Roman Calendar with year %s and locale %s not found",
+                year,
+                locale,
+            )
+            return f"❌ General Roman Calendar with year {year} and locale {locale} not found"
+        logger.error(
+            "HTTP error fetching General Roman Calendar for year %s and locale %s: %s",
+            year,
+            locale,
+            e,
+        )
+        return f"❌ HTTP error fetching General Roman Calendar for year {year} and locale {locale}: {e.response.status_code} - {e.response.text}"
+    except httpx.RequestError as e:
+        logger.error(
+            "Network error fetching General Roman Calendar for year %s and locale %s: %s",
+            year,
+            locale,
+            e,
+        )
+        return f"❌ Network error fetching General Roman Calendar for year {year} and locale {locale}: {str(e)}"
 
 
 @mcp.tool()
@@ -244,7 +255,7 @@ async def list_available_calendars() -> str:
                         lines.append(f"  • {calendar_id}: {diocese_name}")
                         nation_id = item.get("nation", "Unknown")
                         nation = pycountry.countries.get(alpha_2=nation_id).name
-                        lines.append(f"    Nation: {nation}")
+                        lines.append(f"    Nation: {nation_id} ({nation})")
                         if "locales" in item:
                             lines.append(f"    Locales: {', '.join(item['locales'])}")
                     lines.append("")
