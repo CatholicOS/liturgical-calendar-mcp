@@ -20,7 +20,6 @@ It supports querying the General Roman Calendar, national calendars, and diocesa
 - **`get_national_calendar`** - Retrieve the liturgical calendar for a specific nation (IT, US, NL, VA, CA) and year
 - **`get_diocesan_calendar`** - Retrieve the liturgical calendar for a specific diocese and year
 - **`list_available_calendars`** - List all available national and diocesan calendars with their locales and settings
-- **`get_liturgical_events`** - Retrieve all possible liturgical events for a calendar type (general, national, or diocesan)
 
 ## Prerequisites
 
@@ -29,6 +28,8 @@ It supports querying the General Roman Calendar, national calendars, and diocesa
 - No authentication required - the API is publicly accessible
 
 ## Installation
+
+For more detailed information, see the step-by-step instructions and screenshots provided in the project wiki: [Setting-up-Docker-MCP-Toolkit](https://github.com/CatholicOS/liturgical-calendar-mcp/wiki/Setting-up-Docker-MCP-Toolkit).
 
 1. **Install Docker Desktop**
 
@@ -79,7 +80,6 @@ Edit the file `%USERPROFILE%\.docker\mcp\catalogs\docker-mcp.yaml`, and paste th
       - name: get_national_calendar
       - name: get_diocesan_calendar
       - name: list_available_calendars
-      - name: get_liturgical_events
     metadata:
       category: integration
       tags:
@@ -107,6 +107,11 @@ No need to start any containers, Docker MCP Toolkit will spin up the tool contai
 Try with Claude Desktop: if it was already started, exit Claude Desktop completely (make sure it is not running in the background in the tray) and start it again.
 
 You should now see the "Liturgical Calendar" tool in the tools list under `MCP_DOCKER` category.
+
+> [!NOTE]
+> Docker MCP Toolkit only officially supports MCP servers already published in the online catalog,
+> so every time you restart Docker Desktop it will remove any custom entries in the `registry.yaml` and `catalogs/docker-mcp.yaml` files.
+> If you find that the tool calls suddenly stop working, you may have to manually update the `registry.yaml` and `catalogs/docker-mcp.yaml` files again.
 
 ## Usage Examples
 
@@ -163,13 +168,15 @@ Various dioceses within national territories (use `list_available_calendars` to 
 # Run directly
 python3.12 -m venv venv
 source venv/bin/activate
-pip install --no-cache-dir -r requirements.txt
+pip install -r requirements.txt -r requirements-dev.txt
 python litcal_server.py
 # Ctrl+C to stop (you may have to do so a few times)
 
 # Test MCP protocol
 python test_mcp_list_tools.py | python litcal_server.py | jq
 # This should output, in pretty-printed JSON format, the tools made available by the MCP server
+# Ctrl+C to stop
+# There are a few other similar test scripts for testing the various tool calls
 ```
 
 ### Adding New Tools

@@ -13,8 +13,8 @@ import pycountry
 # Configure logging to stderr
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    stream=sys.stderr
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    stream=sys.stderr,
 )
 logger = logging.getLogger("litcal-server")
 
@@ -22,27 +22,29 @@ logger = logging.getLogger("litcal-server")
 mcp = FastMCP("litcal")
 
 # Configuration
-API_BASE_URL    = "https://litcal.johnromanodorazio.com/api/dev"
+API_BASE_URL = "https://litcal.johnromanodorazio.com/api/dev"
 DEFAULT_TIMEOUT = 30
 
 # === UTILITY FUNCTIONS ===
 
+
 def format_event(event_data):
     """Format a single liturgical event for display."""
-    name = event_data.get('name', 'Unknown')
-    date = event_data.get('date', 'Unknown')
-    color = ', '.join(event_data.get('color_lcl', []))
-    grade = event_data.get('grade_lcl', 'Unknown')
+    name = event_data.get("name", "Unknown")
+    date = event_data.get("date", "Unknown")
+    color = ", ".join(event_data.get("color_lcl", []))
+    grade = event_data.get("grade_lcl", "Unknown")
 
     return f"📅 {name}\n   Date: {date}\n   Grade: {grade}\n   Color: {color}"
 
+
 def format_calendar_summary(data):
     """Format calendar data into a readable summary."""
-    if not data or 'litcal' not in data:
+    if not data or "litcal" not in data:
         return "No calendar data available"
 
-    liturgical_events = data['litcal']
-    settings = data.get('settings', {})
+    liturgical_events = data["litcal"]
+    settings = data.get("settings", {})
 
     lines = []
     lines.append("=" * 60)
@@ -51,9 +53,9 @@ def format_calendar_summary(data):
 
     if settings:
         lines.append(f"Locale: {settings.get('locale', 'N/A')}")
-        if settings.get('national_calendar'):
+        if settings.get("national_calendar"):
             lines.append(f"National Calendar: {settings['national_calendar']}")
-        if settings.get('diocesan_calendar'):
+        if settings.get("diocesan_calendar"):
             lines.append(f"Diocesan Calendar: {settings['diocesan_calendar']}")
         lines.append("")
 
@@ -69,12 +71,16 @@ def format_calendar_summary(data):
 
     return "\n".join(lines)
 
+
 # === MCP TOOLS ===
+
 
 @mcp.tool()
 async def get_general_calendar(year: str = "", locale: str = "en") -> str:
     """Retrieve the General Roman Calendar for a specific year with optional locale."""
-    logger.info("Fetching General Roman Calendar for year %s and locale %s", year, locale)
+    logger.info(
+        "Fetching General Roman Calendar for year %s and locale %s", year, locale
+    )
 
     if not year.strip():
         year = str(datetime.now().year)
@@ -90,7 +96,7 @@ async def get_general_calendar(year: str = "", locale: str = "en") -> str:
 
     headers = {
         "Accept": "application/json",
-        "Accept-Language": locale if locale.strip() else "en"
+        "Accept-Language": locale if locale.strip() else "en",
     }
 
     async with httpx.AsyncClient() as client:
@@ -108,10 +114,18 @@ async def get_general_calendar(year: str = "", locale: str = "en") -> str:
             logger.error("JSON decoding error: %s", e)
             return f"❌ Error decoding response: {str(e)}"
 
+
 @mcp.tool()
-async def get_national_calendar(nation: str = "", year: str = "", locale: str = "en") -> str:
+async def get_national_calendar(
+    nation: str = "", year: str = "", locale: str = "en"
+) -> str:
     """Retrieve the liturgical calendar for a specific nation and year, and optional locale."""
-    logger.info("Fetching National Calendar for %s for the year %s (locale %s)", nation, year, locale)
+    logger.info(
+        "Fetching National Calendar for %s for the year %s (locale %s)",
+        nation,
+        year,
+        locale,
+    )
 
     if not nation.strip():
         return "❌ Error: Nation code is required (e.g., IT, US, NL, VA, CA)"
@@ -132,7 +146,7 @@ async def get_national_calendar(nation: str = "", year: str = "", locale: str = 
 
     headers = {
         "Accept": "application/json",
-        "Accept-Language": locale if locale.strip() else "en"
+        "Accept-Language": locale if locale.strip() else "en",
     }
 
     async with httpx.AsyncClient() as client:
@@ -152,10 +166,18 @@ async def get_national_calendar(nation: str = "", year: str = "", locale: str = 
             logger.error("JSON decoding error: %s", e)
             return f"❌ Error decoding response: {str(e)}"
 
+
 @mcp.tool()
-async def get_diocesan_calendar(diocese: str = "", year: str = "", locale: str = "en") -> str:
+async def get_diocesan_calendar(
+    diocese: str = "", year: str = "", locale: str = "en"
+) -> str:
     """Retrieve the liturgical calendar for a specific diocese and year, and optional locale."""
-    logger.info("Fetching Diocesan Calendar for %s for the year %s (locale %s)", diocese, year, locale)
+    logger.info(
+        "Fetching Diocesan Calendar for %s for the year %s (locale %s)",
+        diocese,
+        year,
+        locale,
+    )
 
     if not diocese.strip():
         return "❌ Error: Diocese ID is required (e.g., romamo_it, boston_us)"
@@ -176,7 +198,7 @@ async def get_diocesan_calendar(diocese: str = "", year: str = "", locale: str =
 
     headers = {
         "Accept": "application/json",
-        "Accept-Language": locale if locale.strip() else "en"
+        "Accept-Language": locale if locale.strip() else "en",
     }
 
     async with httpx.AsyncClient() as client:
@@ -197,6 +219,7 @@ async def get_diocesan_calendar(diocese: str = "", year: str = "", locale: str =
             logger.error("JSON decoding error: %s", e)
             return f"❌ Error decoding response: {str(e)}"
 
+
 @mcp.tool()
 async def list_available_calendars() -> str:
     """List all available national and diocesan calendars with their locales and settings."""
@@ -216,34 +239,36 @@ async def list_available_calendars() -> str:
             lines.append("=" * 60)
             lines.append("")
 
-            if 'litcal_metadata' in data:
-                metadata = data['litcal_metadata']
+            if "litcal_metadata" in data:
+                metadata = data["litcal_metadata"]
 
-                if 'national_calendars' in metadata:
+                if "national_calendars" in metadata:
                     lines.append("🌍 NATIONAL CALENDARS:")
                     lines.append("")
-                    for item in metadata.get('national_calendars', []):
-                        calendar_id = item.get('calendar_id', 'Unknown')
-                        lines.append(f"  • {calendar_id}: {pycountry.countries.get(alpha_2=calendar_id).name}")
-                        if 'locales' in item:
+                    for item in metadata.get("national_calendars", []):
+                        calendar_id = item.get("calendar_id", "Unknown")
+                        lines.append(
+                            f"  • {calendar_id}: {pycountry.countries.get(alpha_2=calendar_id).name}"
+                        )
+                        if "locales" in item:
                             lines.append(f"    Locales: {', '.join(item['locales'])}")
                     lines.append("")
 
-                if 'diocesan_calendars' in metadata:
+                if "diocesan_calendars" in metadata:
                     lines.append("⛪ DIOCESAN CALENDARS:")
                     lines.append("")
-                    for item in metadata.get('diocesan_calendars', []):
-                        calendar_id = item.get('calendar_id', 'Unknown')
-                        diocese_name = item.get('diocese', 'Unknown')
+                    for item in metadata.get("diocesan_calendars", []):
+                        calendar_id = item.get("calendar_id", "Unknown")
+                        diocese_name = item.get("diocese", "Unknown")
                         lines.append(f"  • {calendar_id}: {diocese_name}")
-                        nation_id = item.get('nation', 'Unknown')
+                        nation_id = item.get("nation", "Unknown")
                         nation = pycountry.countries.get(alpha_2=nation_id).name
                         lines.append(f"    Nation: {nation}")
-                        if 'locales' in item:
+                        if "locales" in item:
                             lines.append(f"    Locales: {', '.join(item['locales'])}")
                     lines.append("")
 
-                if 'locales' in metadata:
+                if "locales" in metadata:
                     lines.append("🌐 AVAILABLE LOCALES for the General Roman Calendar:")
                     lines.append(f"  {', '.join(metadata['locales'])}")
                     lines.append("")
@@ -259,6 +284,7 @@ async def list_available_calendars() -> str:
         except ValueError as e:
             logger.error("JSON decoding error: %s", e)
             return f"❌ Error decoding response: {str(e)}"
+
 
 # @mcp.tool()
 # async def get_liturgical_events(calendar_type: str = "general", calendar_id: str = "", locale: str = "en") -> str:
@@ -345,7 +371,7 @@ if __name__ == "__main__":
     logger.info("Starting Liturgical Calendar MCP server...")
 
     try:
-        mcp.run(transport='stdio')
+        mcp.run(transport="stdio")
     except (KeyboardInterrupt, SystemExit) as e:
         logger.error("Server interrupted: %s", e, exc_info=True)
         sys.exit(1)

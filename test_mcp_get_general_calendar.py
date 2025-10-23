@@ -10,16 +10,16 @@ messages = [
         "params": {
             "protocolVersion": "2024-11-05",
             "capabilities": {},
-            "clientInfo": {"name": "test", "version": "1.0.0"}
+            "clientInfo": {"name": "test", "version": "1.0.0"},
         },
-        "id": 1
+        "id": 1,
     },
     {
         "jsonrpc": "2.0",
         "method": "tools/call",
         "params": {"name": "get_general_calendar", "arguments": {}},
-        "id": 2
-    }
+        "id": 2,
+    },
 ]
 
 # Send messages

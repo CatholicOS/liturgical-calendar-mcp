@@ -10,16 +10,11 @@ messages = [
         "params": {
             "protocolVersion": "2024-11-05",
             "capabilities": {},
-            "clientInfo": {"name": "test", "version": "1.0.0"}
+            "clientInfo": {"name": "test", "version": "1.0.0"},
         },
-        "id": 1
+        "id": 1,
     },
-    {
-        "jsonrpc": "2.0",
-        "method": "tools/list",
-        "params": {},
-        "id": 2
-    }
+    {"jsonrpc": "2.0", "method": "tools/list", "params": {}, "id": 2},
 ]
 
 # Send messages to server
