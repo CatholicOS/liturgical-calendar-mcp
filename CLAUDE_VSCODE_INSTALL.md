@@ -163,4 +163,3 @@ The server provides these tools:
 - `get_national_calendar` - National calendar (IT, US, NL, VA, CA, etc.)
 - `get_diocesan_calendar` - Diocesan calendar by ID
 - `list_available_calendars` - List all available calendars
-- `get_liturgical_events` - Retrieve all possible liturgical events for a calendar (general, national, or diocesan)
