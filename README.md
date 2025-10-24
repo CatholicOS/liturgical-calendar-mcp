@@ -113,6 +113,10 @@ You should now see the "Liturgical Calendar" tool in the tools list under `MCP_D
 > so every time you restart Docker Desktop it will remove any custom entries in the `registry.yaml` and `catalogs/docker-mcp.yaml` files.
 > If you find that the tool calls suddenly stop working, you may have to manually update the `registry.yaml` and `catalogs/docker-mcp.yaml` files again.
 
+## Local Installation for Claude Desktop & VS Code
+
+If you want to run the MCP server locally and integrate it with Claude Desktop or VS Code, see [CLAUDE_VSCODE_INSTALL.md](./CLAUDE_VSCODE_INSTALL.md) for step-by-step instructions.
+
 ## Usage Examples
 
 In Claude Desktop, you can ask:

@@ -76,7 +76,8 @@ dmypy.json
 *.userosscache
 *.sln.docstates
 *.userprefs
-.vscode/
+.vscode/*
+!.vscode/mcp.json
 *.code-workspace
 
 # macOS

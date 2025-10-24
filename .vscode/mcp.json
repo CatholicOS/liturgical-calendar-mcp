@@ -1,0 +1,9 @@
+{
+  "servers": {
+    "liturgical-calendar-py": {
+      "type": "stdio",
+      "command": "${workspaceFolder}/venv/bin/python",
+      "args": ["${workspaceFolder}/litcal_server.py"]
+    }
+  }
+}
