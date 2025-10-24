@@ -16,10 +16,11 @@ It supports querying the General Roman Calendar, national calendars, and diocesa
 
 ### Current Implementation
 
-- **`get_general_calendar`** - Retrieve the General Roman Calendar for a specific year with optional locale
-- **`get_national_calendar`** - Retrieve the liturgical calendar for a specific nation (IT, US, NL, VA, CA) and year
-- **`get_diocesan_calendar`** - Retrieve the liturgical calendar for a specific diocese and year
 - **`list_available_calendars`** - List all available national and diocesan calendars with their locales and settings
+- **`get_general_calendar`** - Retrieve the General Roman Calendar for a specific year with optional locale
+- **`get_national_calendar`** - Retrieve the liturgical calendar for a specific nation (i.e. IT, US, NL, VA, CA...) and year
+- **`get_diocesan_calendar`** - Retrieve the liturgical calendar for a specific diocese and year
+- **`get_liturgy_of_the_day`** - Retrieve the liturgical celebrations for a specific date (or today if not specified), from any supported calendar
 
 ## Prerequisites
 
@@ -117,13 +118,14 @@ You should now see the "Liturgical Calendar" tool in the tools list under `MCP_D
 
 In Claude Desktop, you can ask:
 
-- "What are the liturgical celebrations for Easter 2025?"
+- "List all available national liturgical calendars"
 - "Show me the liturgical calendar for the United States in 2024"
 - "What is the calendar for the Diocese of Rome for this year?"
-- "List all available national liturgical calendars"
-- "What are the major feast days in the Italian liturgical calendar?"
-- "Show me all optional memorials in the General Roman Calendar"
 - "What liturgical events are celebrated in Canada?"
+- "Get the liturgy of the day"
+- "Get the liturgy of the day for the Diocese of Rome"
+- "Get the liturgy of the day for the Diocese of Rome for 2024"
+- "Get the liturgy for September 8th 3036 for the United States"
 
 ## Architecture
 
