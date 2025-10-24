@@ -4,9 +4,13 @@
 from test_utils import run_test
 
 if __name__ == "__main__":
-    run_test("get_liturgy_of_the_day", {
-        "calendar_id": "CA",
-        "calendar_type": "national",
-        "date": "",
-        "locale": "fr_CA"
-    })
+
+    run_test(
+        "get_liturgy_of_the_day",
+        {
+            "date": "3056-12-18",
+            "locale": "nl_NL",
+            "calendar_id": "NL",
+            "calendar_type": "national",
+        },
+    )
