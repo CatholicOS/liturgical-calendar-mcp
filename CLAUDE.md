@@ -76,22 +76,24 @@ List all national Catholic calendars
 Show me available dioceses
 ```
 
-### 5. get_liturgical_events
+### 5. get_liturgy_of_the_day
 
-Retrieves all possible liturgical events for a calendar type.
+Retrieves the liturgy of the day. Can optionally retrieve for a specific calendar, and for a specific date.
 
 **Parameters:**
 
-- `calendar_type` (optional): Type of calendar - "general", "nation", or "diocese". Defaults to "general".
+- `calendar_type` (optional): Type of calendar - "general", "national", or "diocesan". Defaults to "general".
 - `calendar_id` (optional): ID for nation or diocese (required if calendar_type is not "general")
 - `locale` (optional): Language locale. Defaults to "en".
+- `date` (optional): Date in YYYY-MM-DD format (e.g., "2024-03-15"). Defaults to today if not provided.
 
 **Example Usage:**
 
 ```txt
-What are all the optional memorials in the Roman calendar?
-List all feast days for the United States
-Show me all liturgical events in the Vatican calendar
+Show me all liturgical events in the General Roman Calendar for today
+Show me the liturgy for the Diocese of Rome
+What is the liturgy for the Diocese of Rome for 2024?
+Show me the liturgical calendar for Canada in French
 ```
 
 ## Response Format
