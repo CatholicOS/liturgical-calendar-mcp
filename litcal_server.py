@@ -417,13 +417,13 @@ async def get_liturgy_of_the_day(
             if "litcal" not in data:
                 return "❌ No liturgical calendar data found in response"
 
-            # Convert target date to Unix timestamp (matching the API format)
-            target_timestamp = int(target_date.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc).timestamp())
+            # Format target date to RFC 3339 timestamp at midnight UTC
+            target_date_str = target_date.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc).isoformat()
 
             # Filter celebrations for the target date
             celebrations = [
                 event for event in data["litcal"]
-                if event.get("date") == target_timestamp
+                if event.get("date") == target_date_str
             ]
 
             if not celebrations:
@@ -449,8 +449,7 @@ async def get_liturgy_of_the_day(
             for celebration in celebrations:
                 lines.append(format_event(celebration))
                 if celebration.get("common"):
-                    common_text = ", ".join(celebration.get("common_lcl", celebration.get("common", [])))
-                    lines.append(f"   Common: {common_text}")
+                    lines.append(f"   Common: {celebration.get("common_lcl")}")
                 if celebration.get("liturgical_year"):
                     lines.append(f"   Liturgical Year: {celebration['liturgical_year']}")
                 lines.append("")
