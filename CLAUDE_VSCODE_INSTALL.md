@@ -91,6 +91,23 @@ This guide explains how to add the Liturgical Calendar MCP server to Claude Desk
 
 ⚠️ Claude Desktop is not officially supported on Linux. Use VS Code instead (see below).
 
+If however you are developing on WSL, you can use the following configuration:
+
+  ```json
+  {
+    "mcpServers": {
+      "litcal": {
+        "command": "wsl.exe",
+          "args": [
+            "bash",
+            "-c",
+            "~/[path]/liturgical-calendar-mcp/venv/bin/python ~/[path]/liturgical-calendar-mcp/litcal_server.py"
+          ]
+      }
+    }
+  }
+  ```
+
 ## VS Code (macOS, Windows, Linux)
 
 ### Workspace Configuration (Project-Specific)
@@ -155,7 +172,7 @@ Once configured, test with these prompts:
 
 - "What liturgical calendars are available?"
 - "Get the general Roman calendar for 2025"
-- "Show me the national calendar for Italy this year"
+- "Show me the liturgical calendar for Italy this year"
 
 The server provides these tools:
 
