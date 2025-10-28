@@ -1,6 +1,7 @@
 # Local Installation Guide
 
-This guide explains how to add the Liturgical Calendar MCP server to Claude Desktop and VS Code.
+This guide explains how to add the Liturgical Calendar MCP server to Claude Desktop and VS Code,
+running the server directly, without the Docker MCP Toolkit.
 
 ## Prerequisites
 
