@@ -21,6 +21,8 @@ It supports querying the General Roman Calendar, national calendars, and diocesa
 - **`get_national_calendar`** - Retrieve the liturgical calendar for a specific nation (i.e. IT, US, NL, VA, CA...) and year
 - **`get_diocesan_calendar`** - Retrieve the liturgical calendar for a specific diocese and year
 - **`get_liturgy_of_the_day`** - Retrieve the liturgical celebrations for a specific date (or today if not specified), from any supported calendar
+- **`get_announcement_easter_and_moveable_feasts`** - Retrieve the announcement of Easter and the moveable feasts (aka Noveritis)
+   as pronounced on Epiphany for a specific year for any supported calendar
 
 ## Prerequisites
 

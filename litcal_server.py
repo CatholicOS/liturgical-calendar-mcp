@@ -2,12 +2,13 @@
 """
 Liturgical Calendar MCP Server - Provides access to Roman Catholic liturgical calendar data
 """
-import os
-import sys
-import logging
+import calendar
 import json
 import locale
-import calendar
+import logging
+import os
+import re
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 import inflect
@@ -563,7 +564,7 @@ def _validate_year(year: str) -> int:
 # === UTILITY FUNCTIONS ===
 
 
-def _format_event(event_data):
+def _format_event(event_data: dict) -> str:
     """Format a single liturgical event for display."""
     name = event_data.get("name", "Unknown")
     date = event_data.get("date", "Unknown")
@@ -573,12 +574,12 @@ def _format_event(event_data):
     return f"📅 {name}\n   Date: {date}\n   Grade: {grade}\n   Color: {color}"
 
 
-def _format_header():
+def _format_header() -> list:
     """Format calendar header for display."""
     return ["=" * 60, "📖 LITURGICAL CALENDAR", "=" * 60]
 
 
-def _format_settings(settings):
+def _format_settings(settings: dict) -> list:
     """Format calendar settings for display."""
     lines = []
     if settings:
@@ -593,7 +594,7 @@ def _format_settings(settings):
     return lines
 
 
-def _format_holy_days(events):
+def _format_holy_days(events: list) -> list:
     """Format Holy Days of Obligation for display."""
     lines = ["Holy Days of Obligation:"]
     holy_days = [
@@ -608,7 +609,7 @@ def _format_holy_days(events):
     return lines
 
 
-def _format_liturgical_seasons(events):
+def _format_liturgical_seasons(events: list) -> list:
     """Format key liturgical season events for display."""
     season_events = [
         ("Advent1", "Start of the Advent season:"),
@@ -635,7 +636,20 @@ def _format_liturgical_seasons(events):
     return lines
 
 
-def _format_calendar_summary(data):
+def _format_particular_celebrations(events: list) -> list:
+    """Format celebrations particular to the current calendar, for display."""
+    particular_events = [e for e in events if re.match(r'^\[.*\]', e.get("name", "")) and not e.get("is_vigil_mass", False)]
+    if particular_events:
+        lines = ["Celebrations particular to this calendar:"]
+        for event in particular_events:
+            lines.append(_format_event(event))
+            lines.append("")
+        lines.append("=" * 60)
+        return lines
+    return []
+
+
+def _format_calendar_summary(data: dict) -> str:
     """Format calendar data into a readable summary."""
     if not data or "litcal" not in data:
         return "No calendar data available"
@@ -648,6 +662,7 @@ def _format_calendar_summary(data):
     lines.extend(_format_settings(settings))
     lines.extend(_format_holy_days(liturgical_events))
     lines.extend(_format_liturgical_seasons(liturgical_events))
+    lines.extend(_format_particular_celebrations(liturgical_events))
     lines.append("=" * 60)
     lines.append(f"Total events: {len(liturgical_events)}")
 
