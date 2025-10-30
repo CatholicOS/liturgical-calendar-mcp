@@ -1,0 +1,52 @@
+Irmãos caríssimos,
+\
+a glória do Senhor manifestou-se
+\
+e manifestar-se-á sempre no meio de nós,
+\
+até à sua vinda no fim dos tempos.
+\
+Nos ritmos e nas vicissitudes do tempo
+\
+recordamos e vivemos os mistérios da salvação.
+\
+O centro de todo o ano litúrgico,
+\
+é o Tríduo do Senhor crucificado, sepultado e ressuscitado,
+\
+que culminará no Domingo da Páscoa, este ano a **{easter_day}** de **{easter_month}**.
+\
+Em cada domingo, Páscoa semanal,
+\
+a santa Igreja torna presente este grande acontecimento,
+\
+no qual Jesus Cristo venceu o pecado e a morte.
+\
+Da Páscoa derivam todos os dias santos:
+\
+as Cinzas, início da Quaresma, a **{ash_wednesday_day}** de **{ash_wednesday_month}**;
+\
+a Ascensão do Senhor, a **{ascension_day}** de **{ascension_month}**;
+\
+o Pentecostes, a **{pentecost_day}** de **{pentecost_month}**;
+\
+o primeiro Domingo do Advento, a **{first_sunday_of_advent_day}** de **{first_sunday_of_advent_month}**.
+\
+Também nas festas da Santa Mãe de Deus,
+\
+dos Apóstolos, dos Santos
+\
+e na Comemoração dos Fiéis Defuntos,
+\
+a Igreja peregrina sobre a terra
+\
+proclama a Páscoa do Senhor.
+\
+A Cristo, que era, que é e que há de vir,
+\
+Senhor do tempo e da história,
+\
+louvor e glória pelos séculos dos séculos.
+
+**Ꞧ**. Amen.
+*Fonte: [Secretariado Nacional Liturgia](https://liturgia.pt/noticias/noticia_v.php?cod_noticia=314)*

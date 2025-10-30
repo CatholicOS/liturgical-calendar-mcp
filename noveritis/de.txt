@@ -1,0 +1,51 @@
+**Ꝟ** Liebe Schwestern und Brüder,
+\
+die Herrlichkeit Christi ist heute erschienen;
+\
+immerfort leuchtet sie unter uns auf, bis der Menschensohn wiederkommt.
+\
+Nach dem Fest seiner Geburt und seiner Erscheinung
+\
+schauen wir aus nach den Drei Österlichen Tagen:
+\
+den Feiern seiner Kreuzigung, seiner Ruhe im Grab(e)
+\
+und seiner Auferstehung von den Toten.
+\
+So kündigen wir euch als Erstes das Fest aller Feste an,
+\
+den Ostersonntag, am **{easter_day}. {easter_month}** dieses Jahres.
+\
+Jubelnd feiern wir den Tag, den Gott gemacht,
+\
+und rühmen die Auferstehung unseres Erlösers.
+\
+Damit auch wir mit ihm auferstehn,
+\
+begehen wir vierzig Tage hindurch die Österliche Bußzeit.
+\
+Sie beginnt am **{ash_wednesday_day}. {ash_wednesday_month}** dieses Jahres mit der Feier des Aschermittwochs.
+\
+Danach schenkt uns der Herr die 50 Tage der Osterzeit:
+\
+Am **{ascension_day}. {ascension_month}** das Fest seiner Himmelfahrt
+\
+und am **{pentecost_day}. {pentecost_month}** das Hohe Pfingstfest,
+\
+an dem der Heilige Geist herabkam auf seine Jünger.
+\
+Am **{corpus_christi_day}. {corpus_christi_month}** feiern wir Fronleichnam, das Hochfest des Leibes und Blutes Christi.
+\
+Die Kirche bereitet sich vor auf das Kommen ihres Herrn
+\
+und beginnt den Advent am **{first_sunday_of_advent_day}. {first_sunday_of_advent_month}**.
+\
+Voll Hoffnung erwartet sie am Ende der Zeiten
+\
+die Wiederkunft unseres Retters Jesus Christus.
+\
+Ihm gebührt alle Ehre und Herrlichkeit, jetzt und von Ewigkeit zu Ewigkeit.
+\
+**Ⱥ** Amen.
+\
+*Quelle: [Deutsches Liturgisches Institut](https://dli.institute/wp/wp-content/uploads/2018/12/Festankuendigung-Epiphanie-2026-OHNE-Noten.pdf)*
