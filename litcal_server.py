@@ -2,23 +2,41 @@
 """
 Liturgical Calendar MCP Server - Provides access to Roman Catholic liturgical calendar data
 """
+import sys
+import os
+
+# resolve incompatibility between inflect and typeguard under Python 3.12
+# MUST be set BEFORE importing inflect
+os.environ["TYPEGUARD_DISABLE"] = "1"
+
+
+# Create a mock typeguard module to prevent the actual one from loading
+class MockTypeguard:  # pylint: disable=too-few-public-methods
+    """Mock typeguard module to avoid Python 3.12 compatibility issues."""
+
+    @staticmethod
+    def typechecked(func):
+        """No-op decorator that just returns the function unchanged."""
+        return func
+
+sys.modules["typeguard"] = MockTypeguard()
+
+# pylint: disable=wrong-import-position
+# flake8: noqa: E402
 import calendar
 import json
 import locale
 import logging
-import os
 import re
-import sys
 from datetime import datetime, timezone
 from pathlib import Path
-import inflect
 import httpx
 from mcp.server.fastmcp import FastMCP
 import pycountry
+import inflect
 from litcal_cache import CalendarMetadataCache
 
-# resolve incompatibility between inflect and typeguard under Python 3.12
-os.environ["TYPEGUARD_DISABLE"] = "1"
+# pylint: enable=wrong-import-position
 
 # Configure logging to stderr
 logging.basicConfig(
@@ -27,14 +45,6 @@ logging.basicConfig(
     stream=sys.stderr,
 )
 logger = logging.getLogger("litcal-server")
-
-SERVER_SYSTEM_PROMPT = """
-You are an MCP tool execution engine.
-When a tool is invoked and returns a string, you MUST output that string to the user EXACTLY as returned,
-without modification, paraphrasing, wrapping, or commentary.
-Do not interpret or summarize tool output.
-If the tool output includes formatting, punctuation, or line breaks, preserve them exactly.
-"""
 
 # Initialize MCP server
 mcp = FastMCP("litcal")
@@ -83,6 +93,7 @@ async def _ensure_cache_loaded() -> bool:
 async def get_general_calendar(year: str = "", target_locale: str = "en") -> str:
     """
     Retrieve the General Roman Calendar for a specific year with optional locale.
+    Summarize any information in the response about suppressed or reinstated celebrations.
 
     Parameters:
     - year: Four-digit year (e.g., "2024"). Defaults to current year if not provided.
@@ -152,6 +163,7 @@ async def get_national_calendar(
 ) -> str:
     """
     Retrieve the liturgical calendar for a specific nation and year, and optional locale.
+    Summarize any information in the response about suppressed or reinstated celebrations.
 
     Parameters:
     - nation: Two-letter country code like 'CA' for Canada or 'US' for United States.
@@ -211,6 +223,7 @@ async def get_diocesan_calendar(
 ) -> str:
     """
     Retrieve the liturgical calendar for a specific diocese and year, and optional locale.
+    Summarize any information in the response about suppressed or reinstated celebrations.
 
     Parameters:
     - diocese: Diocese ID like 'romamo_it' for Diocese of Rome.
@@ -638,7 +651,11 @@ def _format_liturgical_seasons(events: list) -> list:
 
 def _format_particular_celebrations(events: list) -> list:
     """Format celebrations particular to the current calendar, for display."""
-    particular_events = [e for e in events if re.match(r'^\[.*\]', e.get("name", "")) and not e.get("is_vigil_mass", False)]
+    particular_events = [
+        e
+        for e in events
+        if re.match(r"^\[.*\]", e.get("name", "")) and not e.get("is_vigil_mass", False)
+    ]
     if particular_events:
         lines = ["Celebrations particular to this calendar:"]
         for event in particular_events:
@@ -647,6 +664,61 @@ def _format_particular_celebrations(events: list) -> list:
         lines.append("=" * 60)
         return lines
     return []
+
+
+def _format_suppressed_reinstated_events(data: dict) -> list:
+    """Format suppressed or reinstated celebrations for display."""
+    lines = []
+    metadata = data.get("metadata", {})
+    suppressed_events = metadata.get("suppressed_events", [])
+    reinstated_events = metadata.get("reinstated_events", [])
+
+    lines.append(
+        "Celebrations that have been superseded by celebrations of greater rank:"
+    )
+    if suppressed_events:
+        for event in suppressed_events:
+            superseding_event = next(
+                (e for e in data["litcal"] if e.get("date") == event.get("date")), None
+            )
+            if superseding_event:
+                lines.append(
+                    "- The liturgical event with key "
+                    + event.get("event_key")
+                    + " was suppressed on "
+                    + event.get("date")
+                    + " by the liturgical event:"
+                )
+                lines.append(_format_event(superseding_event))
+                lines.append("")
+    else:
+        lines.append("  (none)")
+
+    lines.append("=" * 60)
+
+    lines.append(
+        "Celebrations that would have been suppressed or superseded but were finally reinstated:"
+    )
+
+    if reinstated_events:
+        for event in reinstated_events:
+            reinstated_event = next(
+                (
+                    e
+                    for e in data["litcal"]
+                    if e.get("event_key") == event.get("event_key")
+                ),
+                None,
+            )
+            if reinstated_event:
+                lines.append(_format_event(reinstated_event))
+                lines.append("")
+    else:
+        lines.append("  (none)")
+
+    lines.append("=" * 60)
+
+    return lines
 
 
 def _format_calendar_summary(data: dict) -> str:
@@ -663,6 +735,7 @@ def _format_calendar_summary(data: dict) -> str:
     lines.extend(_format_holy_days(liturgical_events))
     lines.extend(_format_liturgical_seasons(liturgical_events))
     lines.extend(_format_particular_celebrations(liturgical_events))
+    lines.extend(_format_suppressed_reinstated_events(data))
     lines.append("=" * 60)
     lines.append(f"Total events: {len(liturgical_events)}")
 
