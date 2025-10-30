@@ -1,0 +1,27 @@
+Fratelli carissimi, la gloria del Signore si è manifestata e sempre si manifesterà in mezzo a noi fino al suo ritorno.
+\
+Nei ritmi e nelle vicende del tempo ricordiamo e viviamo i misteri della salvezza.
+\
+Centro di tutto l’anno liturgico è il Triduo del Signore crocifisso, sepolto e risorto, che culminerà nella domenica di Pasqua il **{easter_day} {easter_month}**.
+\
+In ogni domenica, Pasqua della settimana, la santa Chiesa rende presente questo grande evento nel quale Cristo ha vinto il peccato e la morte.
+\
+Dalla Pasqua scaturiscono tutti i giorni santi:
+\
+Le Ceneri, inizio della Quaresima, il **{ash_wednesday_day} {ash_wednesday_month}**.
+\
+L’Ascensione del Signore, il **{ascension_day} {ascension_month}**.
+\
+La Pentecoste, il **{pentecost_day} {pentecost_month}**.
+\
+La prima domenica di Avvento, il **{first_sunday_of_advent_day} {first_sunday_of_advent_month}**.
+\
+Anche nelle feste della santa Madre di Dio, degli apostoli, dei santi e nella commemorazione dei fedeli defunti,
+\
+la Chiesa pellegrina sulla terra proclama la Pasqua del suo Signore.
+\
+A Cristo che era, che è e che viene, Signore del tempo e della storia, lode perenne nei secoli dei secoli.
+\
+Amen.
+\
+*(Fonte: [CEI Liturgia](https://www.chiesacattolica.it/liturgia-del-giorno/epifania-del-signore-2/))*

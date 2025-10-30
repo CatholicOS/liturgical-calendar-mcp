@@ -1,0 +1,29 @@
+Vous le savez, frères (et sœurs) bien-aimés :
+\
+à l’invitation de la miséricorde de Dieu,
+\
+nous nous sommes réjouis
+\
+de la Nativité de notre Seigneur Jésus Christ ;
+\
+de même, nous vous annonçons
+\
+la joie de la Résurrection de notre Sauveur.
+\
+Le Mercredi des Cendres, commencera l’entraînement du Carême le **{ash_wednesday_day} {ash_wednesday_month}**.
+\
+Vous célébrerez dans la joie la sainte Pâque de notre Seigneur Jésus Christ le dimanche **{easter_day} {easter_month}**.
+\
+L’Ascension de notre Seigneur Jésus Christ sera fêtée le **{ascension_day} {ascension_month}**.
+\
+La Pentecôte sera fêtée le **{pentecost_day} {pentecost_month}**.
+\
+La fête du Corps et du Sang du Christ aura lieu le **{corpus_christi_day} {corpus_christi_month}**.
+\
+Le dimanche **{first_sunday_of_advent_day} {first_sunday_of_advent_month}** sera le premier dimanche de l’Avent de notre Seigneur Jésus Christ,
+\
+à qui soient l’honneur et la gloire, pour les siècles des siècles.
+\
+Amen.
+\
+*(Source: [Diocèse de Namur](https://liturgie.diocesedenamur.be/noveritis/))*
