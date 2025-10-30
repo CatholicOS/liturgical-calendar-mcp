@@ -19,6 +19,7 @@ class MockTypeguard:  # pylint: disable=too-few-public-methods
         """No-op decorator that just returns the function unchanged."""
         return func
 
+
 sys.modules["typeguard"] = MockTypeguard()
 
 # pylint: disable=wrong-import-position
