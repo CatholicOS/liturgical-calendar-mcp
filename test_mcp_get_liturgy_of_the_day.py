@@ -9,7 +9,7 @@ if __name__ == "__main__":
         "get_liturgy_of_the_day",
         {
             "date": "3056-12-18",
-            "locale": "nl_NL",
+            "target_locale": "nl_NL",
             "calendar_id": "NL",
             "calendar_type": "national",
         },

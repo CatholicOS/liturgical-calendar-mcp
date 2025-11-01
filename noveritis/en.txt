@@ -1,0 +1,27 @@
+Know, dear brethren (brothers and sisters),
+that, as we have rejoiced at the Nativity of our Lord Jesus Christ,
+so by leave of God's mercy
+we announce to you also the joy of his Resurrection,
+who is our Savior.
+
+On the **{ash_wednesday_day}** day of **{ash_wednesday_month}** will fall Ash Wednesday,
+\
+and the beginning of the fast of the most sacred Lenten season.
+
+On the **{easter_day}** day of **{easter_month}** you will celebrate with joy Easter Day,
+\
+the Paschal feast of our Lord Jesus Christ.
+
+On the **{ascension_day}** day of **{ascension_month}** will be the Ascension of our Lord Jesus Christ.
+
+On the **{pentecost_day}** day of **{pentecost_month}**, the feast of Pentecost.
+
+On the **{corpus_christi_day}** day of **{corpus_christi_month}**, the feast of the Most Holy Body and Blood of Christ.
+
+On the **{first_sunday_of_advent_day}** day of **{first_sunday_of_advent_month}**, the First Sunday of the Advent of our Lord Jesus Christ,
+\
+to whom is honor and glory for ever and ever.
+\
+Amen.
+\
+*(Source: [USCCB Prayer and Worship](https://www.usccb.org/prayer-and-worship/liturgical-year-and-calendar/christmas/announcement-of-easter-and-the-moveable-feasts))*

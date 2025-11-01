@@ -1,0 +1,53 @@
+Queridos hermanos:
+\
+La gloria del Señor se ha manifestado
+\
+y se continuará manifestando entre nosotros,
+\
+hasta el día de su retorno glorioso.
+\
+En la sucesión de las diversas fiestas y solemnidades del tiempo,
+\
+recordamos y vivimos los misterios de la salvación.
+
+Centro de todo el año litúrgico
+\
+es el Triduo Pascual del Señor crucificado, sepultado y resucitado,
+\
+que este año culminará en la Noche santa de Pascua
+\
+que, con gozo celebraremos el día **{easter_day}** de **{easter_month}**.
+
+Cada domingo, Pascua semanal,
+\
+la santa Iglesia hará presente este mismo acontecimiento,
+\
+en el cual Cristo ha vencido el pecado y la muerte.
+\
+De la Pascua fluyen, como su manantial,
+\
+todos los demás días santos:
+
+El Miércoles de Ceniza comienzo de la Cuaresma, que celebraremos el día **{ash_wednesday_day}** de **{ash_wednesday_month}**.
+
+La Ascensión del Señor, que este año será celebrada el día **{ascension_day}** de **{ascension_month}**.
+
+El domingo de Pentecostés, que este año celebraremos el día **{pentecost_day}** de **{pentecost_month}**.
+
+El primer domingo de Adviento, que celebraremos el día **{first_sunday_of_advent_day}** de **{first_sunday_of_advent_month}**.
+
+También en las fiestas de la santísima Virgen María, Madre de Dios,
+\
+de los apóstoles, de los santos y en la conmemoración de todos los fieles difuntos,
+\
+la Iglesia, peregrina en la tierra, proclama la Pascua de su Señor.
+\
+A él, el Cristo glorioso, el que era, el que es y el que vendrá,
+\
+al que es Señor del tiempo y de la historia,
+\
+todo honor y toda gloria por los siglos de los siglos.
+\
+R. Amén.
+\
+*(Fuente: [USCCB Prayer and Worship](https://www.usccb.org/es/prayer-and-worship/liturgical-year-and-calendar/christmas/announcement-of-easter-and-the-moveable-feasts))*

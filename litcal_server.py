@@ -4,13 +4,41 @@ Liturgical Calendar MCP Server - Provides access to Roman Catholic liturgical ca
 """
 
 import sys
-import logging
+import os
+
+# resolve incompatibility between inflect and typeguard under Python 3.12
+# MUST be set BEFORE importing inflect
+os.environ["TYPEGUARD_DISABLE"] = "1"
+
+
+# Create a mock typeguard module to prevent the actual one from loading
+class MockTypeguard:  # pylint: disable=too-few-public-methods
+    """Mock typeguard module to avoid Python 3.12 compatibility issues."""
+
+    @staticmethod
+    def typechecked(func):
+        """No-op decorator that just returns the function unchanged."""
+        return func
+
+
+sys.modules["typeguard"] = MockTypeguard()
+
+# pylint: disable=wrong-import-position
+# flake8: noqa: E402
+import calendar
 import json
+import locale
+import logging
+import re
 from datetime import datetime, timezone
+from pathlib import Path
 import httpx
 from mcp.server.fastmcp import FastMCP
 import pycountry
+import inflect
 from litcal_cache import CalendarMetadataCache
+
+# pylint: enable=wrong-import-position
 
 # Configure logging to stderr
 logging.basicConfig(
@@ -21,11 +49,14 @@ logging.basicConfig(
 logger = logging.getLogger("litcal-server")
 
 # Initialize MCP server
-mcp = FastMCP("litcal")
+mcp = FastMCP(name="litcal")
 
 # Configuration
 API_BASE_URL = "https://litcal.johnromanodorazio.com/api/dev"
 DEFAULT_TIMEOUT = 30
+NOVERITIS_DIR = Path(__file__).parent / "noveritis"
+FESTIVE_CYCLE = ["A", "B", "C"]
+FERIAL_CYCLE = ["I", "II"]
 
 # Initialize cache
 metadata_cache = CalendarMetadataCache()
@@ -33,7 +64,7 @@ metadata_cache = CalendarMetadataCache()
 # === CACHE MANAGEMENT ===
 
 
-async def ensure_cache_loaded() -> bool:
+async def _ensure_cache_loaded() -> bool:
     """Ensure metadata cache is loaded and fresh."""
     if not metadata_cache.is_expired():
         return True
@@ -58,151 +89,52 @@ async def ensure_cache_loaded() -> bool:
         return False
 
 
-# === UTILITY FUNCTIONS ===
-
-
-def format_event(event_data):
-    """Format a single liturgical event for display."""
-    name = event_data.get("name", "Unknown")
-    date = event_data.get("date", "Unknown")
-    color = ", ".join(event_data.get("color_lcl", []))
-    grade = event_data.get("grade_lcl", "Unknown")
-
-    return f"📅 {name}\n   Date: {date}\n   Grade: {grade}\n   Color: {color}"
-
-
-def format_calendar_summary(data):
-    """Format calendar data into a readable summary."""
-    if not data or "litcal" not in data:
-        return "No calendar data available"
-
-    liturgical_events = data["litcal"]
-    settings = data.get("settings", {})
-
-    lines = []
-    lines.append("=" * 60)
-    lines.append("📖 LITURGICAL CALENDAR")
-    lines.append("=" * 60)
-
-    if settings:
-        lines.append(f"Locale: {settings.get('locale', 'N/A')}")
-        if settings.get("national_calendar"):
-            lines.append(f"National Calendar: {settings['national_calendar']}")
-        if settings.get("diocesan_calendar"):
-            lines.append(f"Diocesan Calendar: {settings['diocesan_calendar']}")
-        lines.append("")
-
-    for event_data in liturgical_events[:50]:
-        lines.append(format_event(event_data))
-        lines.append("")
-
-    if len(liturgical_events) > 50:
-        lines.append(f"... and {len(liturgical_events) - 50} more events")
-
-    lines.append("=" * 60)
-    lines.append(f"Total events: {len(liturgical_events)}")
-
-    return "\n".join(lines)
-
-
-def _build_calendar_url(calendar_type: str, calendar_id: str, year: int) -> str:
-    """Build the appropriate API URL based on calendar type."""
-    if calendar_type == "general":
-        return f"{API_BASE_URL}/calendar/{year}"
-
-    if calendar_type == "national":
-        return f"{API_BASE_URL}/calendar/nation/{calendar_id}/{year}"
-
-    # Diocesan calendar
-    return f"{API_BASE_URL}/calendar/diocese/{calendar_id}/{year}"
-
-
-def _filter_celebrations_by_date(data: dict, target_date: datetime) -> list:
-    """Filter liturgical celebrations for a specific date."""
-    if "litcal" not in data:
-        return None
-
-    # Format target date to RFC 3339 timestamp at midnight UTC
-    target_date_str = target_date.replace(
-        hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc
-    ).isoformat()
-
-    return [event for event in data["litcal"] if event.get("date") == target_date_str]
-
-
-def _format_liturgy_response(
-    celebrations: list, target_date: datetime, settings: dict
-) -> str:
-    """Format the liturgy of the day response."""
-    formatted_date = target_date.strftime("%A, %B %d, %Y")
-    lines = [
-        "=" * 60,
-        f"📖 LITURGY OF THE DAY - {formatted_date}",
-        "=" * 60,
-    ]
-
-    if settings:
-        lines.append(f"Locale: {settings.get('locale', 'N/A')}")
-        if settings.get("national_calendar"):
-            lines.append(f"National Calendar: {settings['national_calendar']}")
-        if settings.get("diocesan_calendar"):
-            lines.append(f"Diocesan Calendar: {settings['diocesan_calendar']}")
-        lines.append("")
-
-    for celebration in celebrations:
-        lines.append(format_event(celebration))
-        if celebration.get("common"):
-            lines.append(f"   Common: {celebration.get('common_lcl')}")
-        if celebration.get("liturgical_year"):
-            lines.append(f"   Liturgical Year: {celebration['liturgical_year']}")
-        if celebration.get("readings"):
-            lines.append(f"   Readings: {json.dumps(celebration['readings'])}")
-        lines.append("")
-
-    lines.append("=" * 60)
-    return "✅ " + "\n".join(lines)
-
-
 # === MCP TOOLS ===
 
 
 @mcp.tool()
-async def get_general_calendar(year: str = "", locale: str = "en") -> str:
+async def get_general_calendar(
+    year: int | None = None, target_locale: str = "en"
+) -> str:
     """
     Retrieve the General Roman Calendar for a specific year with optional locale.
+    Summarize any information in the response about suppressed or reinstated celebrations.
 
     Parameters:
-    - year: Four-digit year (e.g., "2024"). Defaults to current year if not provided.
-    - locale: Locale code for translations (e.g., "en", "fr"). Defaults to "en".
+    - year: Four-digit year (e.g., `2024`) between 1970 and 9999. Defaults to current year if not provided.
+    - target_locale: Locale code for translations (e.g., "en", "fr"). Defaults to "en".
 
-    Example: locale='fr', year='2023'
+    Example: target_locale='fr', year=2023
     """
     logger.info(
-        "Fetching General Roman Calendar for year %s and locale %s", year, locale
+        "Fetching General Roman Calendar for year %s and locale %s", year, target_locale
     )
 
     try:
         # Ensure cache is loaded
-        await ensure_cache_loaded()
+        await _ensure_cache_loaded()
 
         # Validate and normalize inputs
         year_int = _validate_year(year)
 
         # Get best matching locale
-        locale = metadata_cache.get_supported_locale("general", "", locale)
+        target_locale = metadata_cache.get_supported_locale(
+            "general", "", target_locale
+        )
 
         # Make API request
         url = f"{API_BASE_URL}/calendar/{year_int}"
+        logger.info("Using calendar URL: %s", url)
         headers = {
             "Accept": "application/json",
-            "Accept-Language": locale,
+            "Accept-Language": target_locale,
         }
 
         async with httpx.AsyncClient() as client:
             response = await client.get(url, headers=headers, timeout=DEFAULT_TIMEOUT)
             response.raise_for_status()
             data = response.json()
-            return f"✅ General Roman Calendar for {year}:\n\n{format_calendar_summary(data)}"
+            return f"✅ General Roman Calendar for {year}:\n\n{_format_calendar_summary(data)}"
     except ValueError as e:
         logger.error("Error: %s", e)
         return f"❌ Error: {str(e)}"
@@ -211,68 +143,72 @@ async def get_general_calendar(year: str = "", locale: str = "en") -> str:
             logger.error(
                 "General Roman Calendar with year %s and locale %s not found",
                 year,
-                locale,
+                target_locale,
             )
-            return f"❌ General Roman Calendar with year {year} and locale {locale} not found"
+            return f"❌ General Roman Calendar with year {year} and locale {target_locale} not found"
         logger.error(
             "HTTP error fetching General Roman Calendar for year %s and locale %s: %s",
             year,
-            locale,
+            target_locale,
             e,
         )
-        return f"❌ HTTP error fetching General Roman Calendar for year {year} and locale {locale}: {e.response.status_code} - {e.response.text}"
+        return f"❌ HTTP error fetching General Roman Calendar for year {year} and locale {target_locale}: {e.response.status_code} - {e.response.text}"
     except httpx.RequestError as e:
         logger.error(
             "Network error fetching General Roman Calendar for year %s and locale %s: %s",
             year,
-            locale,
+            target_locale,
             e,
         )
-        return f"❌ Network error fetching General Roman Calendar for year {year} and locale {locale}: {str(e)}"
+        return f"❌ Network error fetching General Roman Calendar for year {year} and locale {target_locale}: {str(e)}"
 
 
 @mcp.tool()
 async def get_national_calendar(
-    nation: str = "", year: str = "", locale: str = "en_US"
+    nation: str = "", year: int | None = None, target_locale: str = "en_US"
 ) -> str:
     """
     Retrieve the liturgical calendar for a specific nation and year, and optional locale.
+    Summarize any information in the response about suppressed or reinstated celebrations.
 
     Parameters:
     - nation: Two-letter country code like 'CA' for Canada or 'US' for United States.
-    - year: Four-digit year (e.g., "2024"). Defaults to current year if not provided.
-    - locale: Use format like 'fr_CA' for French-Canadian; infer the regional format from the nation parameter. Defaults to 'en_US'.
+    - year: Four-digit year (e.g., `2024`). Defaults to current year if not provided.
+    - target_locale: Use format like 'fr_CA' for French-Canadian; infer the regional format from the nation parameter. Defaults to 'en_US'.
 
-    Example: nation='CA', locale='fr_CA', year='2023'
+    Example: nation='CA', target_locale='fr_CA', year=2023
     """
     logger.info(
         "Fetching National Calendar for %s for the year %s (locale %s)",
         nation,
         year,
-        locale,
+        target_locale,
     )
 
     try:
         # Ensure cache is loaded
-        await ensure_cache_loaded()
+        await _ensure_cache_loaded()
 
         # Validate and normalize inputs
         nation = _validate_nation(nation)
         year_int = _validate_year(year)
-        locale = metadata_cache.get_supported_locale("national", nation, locale)
+        target_locale = metadata_cache.get_supported_locale(
+            "national", nation, target_locale
+        )
 
         # Make API request
         url = f"{API_BASE_URL}/calendar/nation/{nation}/{year_int}"
+        logger.info("Using calendar URL: %s", url)
         headers = {
             "Accept": "application/json",
-            "Accept-Language": locale,
+            "Accept-Language": target_locale,
         }
 
         async with httpx.AsyncClient() as client:
             response = await client.get(url, headers=headers, timeout=DEFAULT_TIMEOUT)
             response.raise_for_status()
             data = response.json()
-            return f"✅ National Calendar for {nation} ({year}):\n\n{format_calendar_summary(data)}"
+            return f"✅ National Calendar for {pycountry.countries.get(alpha_2=nation).name} ({year}):\n\n{_format_calendar_summary(data)}"
     except ValueError as e:
         logger.error("Error: %s", e)
         return f"❌ Error: {str(e)}"
@@ -290,46 +226,50 @@ async def get_national_calendar(
 
 @mcp.tool()
 async def get_diocesan_calendar(
-    diocese: str = "", year: str = "", locale: str = "en_US"
+    diocese: str = "", year: int | None = None, target_locale: str = "en_US"
 ) -> str:
     """
     Retrieve the liturgical calendar for a specific diocese and year, and optional locale.
+    Summarize any information in the response about suppressed or reinstated celebrations.
 
     Parameters:
     - diocese: Diocese ID like 'romamo_it' for Diocese of Rome.
-    - year: Four-digit year (e.g., "2024"). Defaults to current year if not provided.
-    - locale: Use format like 'fr_CA' for French-Canadian; infer the regional format from the nation that the diocese belongs to. Defaults to 'en_US'.
+    - year: Four-digit year (e.g., `2024`). Defaults to current year if not provided.
+    - target_locale: Use format like 'fr_CA' for French-Canadian; infer the regional format from the nation that the diocese belongs to. Defaults to 'en_US'.
 
-    Example: diocese='romamo_it', locale='it_IT', year='2023'
+    Example: diocese='romamo_it', target_locale='it_IT', year=2023
     """
     logger.info(
         "Fetching Diocesan Calendar for %s for the year %s (locale %s)",
         diocese,
         year,
-        locale,
+        target_locale,
     )
 
     try:
         # Ensure cache is loaded
-        await ensure_cache_loaded()
+        await _ensure_cache_loaded()
 
         # Validate and normalize inputs
         diocese = _validate_diocese(diocese)
         year_int = _validate_year(year)
-        locale = metadata_cache.get_supported_locale("diocesan", diocese, locale)
+        target_locale = metadata_cache.get_supported_locale(
+            "diocesan", diocese, target_locale
+        )
 
         # Make API request
         url = f"{API_BASE_URL}/calendar/diocese/{diocese}/{year_int}"
+        logger.info("Using calendar URL: %s", url)
         headers = {
             "Accept": "application/json",
-            "Accept-Language": locale,
+            "Accept-Language": target_locale,
         }
 
         async with httpx.AsyncClient() as client:
             response = await client.get(url, headers=headers, timeout=DEFAULT_TIMEOUT)
             response.raise_for_status()
             data = response.json()
-            return f"✅ Diocesan Calendar for {diocese} ({year}):\n\n{format_calendar_summary(data)}"
+            return f"✅ Diocesan Calendar for {diocese} ({year}):\n\n{_format_calendar_summary(data)}"
     except ValueError as e:
         logger.error("Error: %s", e)
         return f"❌ Error: {str(e)}"
@@ -354,7 +294,7 @@ async def list_available_calendars() -> str:
 
     try:
         # Ensure cache is loaded
-        await ensure_cache_loaded()
+        await _ensure_cache_loaded()
 
         data = metadata_cache.get_data()
         if not data:
@@ -416,7 +356,7 @@ async def get_liturgy_of_the_day(
     date: str = "",
     calendar_type: str = "general",
     calendar_id: str = "",
-    locale: str = "en",
+    target_locale: str = "en",
 ) -> str:
     """
     Retrieve the liturgical celebrations for a specific date from any calendar.
@@ -426,25 +366,25 @@ async def get_liturgy_of_the_day(
     - calendar_type: Type of calendar - "general", "national", or "diocesan". Defaults to "general".
     - calendar_id: Calendar identifier (nation code like 'US' or diocese id like 'romamo_it').
                    Required for national/diocesan calendars, ignored for general calendar.
-    - locale: Locale code for translations (e.g., "en", "fr_CA"). Must have a regional identifier for national or diocesan calendars. Defaults to "en".
+    - target_locale: Locale code for translations (e.g., "en", "fr_CA"). Must have a regional identifier for national or diocesan calendars. Defaults to "en".
 
     Examples:
     - Today's liturgy in the general roman calendar: date='', calendar_type='general'
-    - Liturgy for a specific date in US: date='2024-12-25', calendar_type='national', calendar_id='US', locale='en_US'
-    - Liturgy for a specific date in Rome diocese: date='2024-06-29', calendar_type='diocesan', calendar_id='romamo_it', locale='it_IT'
-    - Today's liturgy in the calendar for Canada in French: date='', calendar_type='national', calendar_id='CA', locale='fr_CA'
+    - Liturgy for a specific date in US: date='2024-12-25', calendar_type='national', calendar_id='US', target_locale='en_US'
+    - Liturgy for a specific date in Rome diocese: date='2024-06-29', calendar_type='diocesan', calendar_id='romamo_it', target_locale='it_IT'
+    - Today's liturgy in the calendar for Canada in French: date='', calendar_type='national', calendar_id='CA', target_locale='fr_CA'
     """
     logger.info(
         "Fetching liturgy of the day for date %s, calendar_type %s, calendar_id %s, locale %s",
         date,
         calendar_type,
         calendar_id,
-        locale,
+        target_locale,
     )
 
     try:
         # Ensure cache is loaded
-        await ensure_cache_loaded()
+        await _ensure_cache_loaded()
 
         # Validate and normalize inputs
         calendar_type = _validate_calendar_type(calendar_type)
@@ -458,12 +398,15 @@ async def get_liturgy_of_the_day(
 
         # Build URL and get locale
         url = _build_calendar_url(calendar_type, calendar_id, target_date.year)
-        locale = metadata_cache.get_supported_locale(calendar_type, calendar_id, locale)
+        logger.info("Using calendar URL: %s", url)
+        target_locale = metadata_cache.get_supported_locale(
+            calendar_type, calendar_id, target_locale
+        )
 
         # Make API request
         headers = {
             "Accept": "application/json",
-            "Accept-Language": locale,
+            "Accept-Language": target_locale,
         }
 
         async with httpx.AsyncClient() as client:
@@ -500,6 +443,81 @@ async def get_liturgy_of_the_day(
     except httpx.RequestError as e:
         logger.error("Network error fetching liturgy: %s", e)
         return f"❌ Network error: {str(e)}"
+
+
+@mcp.tool()
+async def get_announcement_easter_and_moveable_feasts(
+    calendar_type: str = "general",
+    calendar_id: str = "",
+    target_locale: str = "en",
+    year: int | None = None,
+) -> str:
+    """
+    Produce the Epiphany announcement (Noveritis) for the dates of Easter and other moveable feasts for a specific year from any calendar.
+    The response MUST be output exactly as returned, without reformatting, paraphrasing, summarization, or additional commentary.
+    Preserve all markdown formatting, punctuation, and line breaks exactly as in the response, including any links.
+
+    Parameters:
+    - calendar_type: Type of calendar - "general", "national", or "diocesan". Defaults to "general".
+    - calendar_id: Calendar identifier (nation code like 'US' or diocese id like 'romamo_it').
+                   Required for national/diocesan calendars, ignored for general calendar.
+    - target_locale: Locale code for translations (e.g., "en", "fr_CA"). Must have a regional identifier for national or diocesan calendars. Defaults to "en".
+    - year: Four-digit year (e.g., `2024`). Defaults to current year if not provided.
+    """
+    logger.info("Fetching Easter and moveable feasts for year %s", year)
+
+    try:
+        # Ensure cache is loaded
+        await _ensure_cache_loaded()
+
+        # Validate and normalize inputs
+        year_int = _validate_year(year)
+        calendar_type = _validate_calendar_type(calendar_type)
+
+        # Validate calendar ID if needed
+        if calendar_type == "national":
+            calendar_id = _validate_nation(calendar_id)
+        elif calendar_type == "diocesan":
+            calendar_id = _validate_diocese(calendar_id)
+
+        # Build URL and get locale
+        url = _build_calendar_url(calendar_type, calendar_id, year_int)
+        logger.info("Using calendar URL: %s", url)
+        target_locale = metadata_cache.get_supported_locale(
+            calendar_type, calendar_id, target_locale
+        )
+
+        # Make API request
+        headers = {
+            "Accept": "application/json",
+            "Accept-Language": target_locale,
+        }
+
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                url,
+                headers=headers,
+                params={"year_type": "CIVIL"},
+                timeout=DEFAULT_TIMEOUT,
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            # Format and return response
+            return _format_announcement_response(data, year_int)
+
+    except ValueError as e:
+        logger.error("Error: %s", e)
+        return f"❌ Error: {str(e)}"
+    except httpx.HTTPStatusError as e:
+        logger.error("HTTP error fetching moveable feasts: %s", e)
+        return f"❌ HTTP error fetching moveable feasts: {e.response.status_code} - {e.response.text}"
+    except httpx.RequestError as e:
+        logger.error("Network error fetching moveable feasts: %s", e)
+        return f"❌ Network error fetching moveable feasts: {str(e)}"
+
+
+# === INPUT VALIDATION HELPERS ===
 
 
 def _validate_calendar_type(calendar_type: str) -> str:
@@ -550,20 +568,388 @@ def _validate_diocese(diocese: str) -> str:
     return diocese.strip().lower()
 
 
-def _validate_year(year: str) -> int:
+def _validate_year(year: int | None) -> int:
     """Validate and normalize year value."""
-    if not year.strip():
+    if year is None:
         return datetime.now().year
 
-    try:
-        year_int = int(year)
-        if year_int < 1970 or year_int > 9999:
-            raise ValueError("Year must be between 1970 and 9999")
-        return year_int
-    except ValueError as e:
-        if "invalid literal" in str(e).lower():
-            raise ValueError(f"Invalid year value: {year}") from e
-        raise
+    if year < 1970 or year > 9999:
+        raise ValueError("Year must be between 1970 and 9999")
+
+    return year
+
+
+# === UTILITY FUNCTIONS ===
+
+
+def _format_event(event_data: dict) -> str:
+    """Format a single liturgical event for display."""
+    name = event_data.get("name", "Unknown")
+    date = event_data.get("date", "Unknown")
+    color = ", ".join(event_data.get("color_lcl", []))
+    grade = event_data.get("grade_lcl", "Unknown")
+
+    return f"📅 {name}\n   Date: {date}\n   Grade: {grade}\n   Color: {color}"
+
+
+def _format_header() -> list:
+    """Format calendar header for display."""
+    return ["=" * 60, "📖 LITURGICAL CALENDAR", "=" * 60]
+
+
+def _format_settings(settings: dict) -> list:
+    """Format calendar settings for display."""
+    lines = []
+    if settings:
+        lines.append(f"Locale: {settings.get('locale', 'N/A')}")
+        for key, label in [
+            ("national_calendar", "National Calendar"),
+            ("diocesan_calendar", "Diocesan Calendar"),
+        ]:
+            if settings.get(key):
+                lines.append(f"{label}: {settings[key]}")
+        lines.append("=" * 60)
+    return lines
+
+
+def _format_holy_days(events: list) -> list:
+    """Format Holy Days of Obligation for display."""
+    lines = ["## Holy Days of Obligation"]
+    holy_days = [
+        e
+        for e in events
+        if e.get("holy_day_of_obligation", False) and not e.get("is_vigil_mass", False)
+    ]
+    for event in holy_days:
+        lines.append(_format_event(event))
+        lines.append("")
+    lines.append("=" * 60)
+    return lines
+
+
+def _format_liturgical_seasons(events: list) -> list:
+    """Format key liturgical season events for display."""
+    season_events = [
+        ("Advent1", "### Start of the Advent season"),
+        ("Christmas", "### Start of the Christmas season"),
+        ("Epiphany", None),
+        (
+            "BaptismOfTheLord",
+            "### End of the Christmas season and start of Ordinary Time",
+        ),
+        ("AshWednesday", "### Start of the Lent season"),
+        ("HolyThursday", "### Start of the Easter Triduum"),
+        ("Easter", "### Start of the Easter season"),
+        ("Pentecost", "### End of the Easter season and start of Ordinary Time"),
+        ("ChristKing", "### Last Sunday of Ordinary Time"),
+        ("OrdWeekday34Saturday", "### Last day of the liturgical year"),
+    ]
+
+    lines = ["## Start and end of liturgical seasons"]
+    for key, label in season_events:
+        event = next((e for e in events if e.get("event_key") == key), None)
+        if event:
+            if label:
+                lines.append(label)
+            lines.append(_format_event(event))
+            lines.append("")
+    lines.append("=" * 60)
+    return lines
+
+
+def _format_particular_celebrations(events: list) -> list:
+    """Format celebrations particular to the current calendar, for display."""
+    particular_events = [
+        e
+        for e in events
+        if re.match(r"^\[.*\]", e.get("name", "")) and not e.get("is_vigil_mass", False)
+    ]
+    if particular_events:
+        lines = ["## Celebrations particular to this calendar"]
+        for event in particular_events:
+            lines.append(_format_event(event))
+            lines.append("")
+        lines.append("=" * 60)
+        return lines
+    return []
+
+
+def _format_suppressed_reinstated_events(data: dict) -> list:
+    """Format suppressed or reinstated celebrations for display."""
+    lines = []
+    metadata = data.get("metadata", {})
+    suppressed_events = metadata.get("suppressed_events", [])
+    reinstated_events = metadata.get("reinstated_events", [])
+
+    lines.append(
+        "## Celebrations that have been superseded by celebrations of greater rank"
+    )
+    if suppressed_events:
+        for event in suppressed_events:
+            superseding_event = next(
+                (e for e in data["litcal"] if e.get("date") == event.get("date")), None
+            )
+            if superseding_event:
+                lines.append(
+                    "- The liturgical event with key "
+                    + event.get("event_key")
+                    + " was suppressed on "
+                    + event.get("date")
+                    + " by the liturgical event:"
+                )
+                lines.append(_format_event(superseding_event))
+                lines.append("")
+    else:
+        lines.append("  (none)")
+
+    lines.append("=" * 60)
+
+    lines.append(
+        "## Celebrations that would have been suppressed or superseded but were finally reinstated"
+    )
+
+    if reinstated_events:
+        for event in reinstated_events:
+            reinstated_event = next(
+                (
+                    e
+                    for e in data["litcal"]
+                    if e.get("event_key") == event.get("event_key")
+                ),
+                None,
+            )
+            if reinstated_event:
+                lines.append(_format_event(reinstated_event))
+                lines.append("")
+    else:
+        lines.append("  (none)")
+
+    lines.append("=" * 60)
+
+    return lines
+
+
+def _format_calendar_summary(data: dict) -> str:
+    """Format calendar data into a readable summary."""
+    if not data or "litcal" not in data:
+        return "No calendar data available"
+
+    liturgical_events = data["litcal"]
+    settings = data.get("settings", {})
+
+    lines = []
+    lines.extend(_format_header())
+    lines.extend(_format_holy_days(liturgical_events))
+    lines.extend(_format_liturgical_seasons(liturgical_events))
+    lines.extend(_format_particular_celebrations(liturgical_events))
+    # the LLM is sometimes confusing info from suppressed events with info from particular celebrations,
+    # so we might as well not show it at all until we find a better way
+    # lines.extend(_format_suppressed_reinstated_events(data))
+    # lines.append("=" * 60)
+    lines.append(f"Total events: {len(liturgical_events)}")
+    # the lectionary cycles are available for single events, but not to the calendar as a whole,
+    # so if we want to see this info, we can just calculate it
+    year_cycles = _calculate_year_cycles(settings.get("year", datetime.now().year))
+    lines.append(f"Festive Lectionary cycle: YEAR {year_cycles['festive_year_cycle']}")
+    lines.append(f"Ferial Lectionary cycle: YEAR {year_cycles['ferial_year_cycle']}")
+    lines.extend(_format_settings(settings))
+
+    return "\n".join(lines)
+
+
+def _build_calendar_url(calendar_type: str, calendar_id: str, year: int) -> str:
+    """Build the appropriate API URL based on calendar type."""
+    if calendar_type == "general":
+        return f"{API_BASE_URL}/calendar/{year}"
+
+    if calendar_type == "national":
+        return f"{API_BASE_URL}/calendar/nation/{calendar_id}/{year}"
+
+    # Diocesan calendar
+    return f"{API_BASE_URL}/calendar/diocese/{calendar_id}/{year}"
+
+
+def _filter_celebrations_by_date(data: dict, target_date: datetime) -> list:
+    """Filter liturgical celebrations for a specific date."""
+    if "litcal" not in data:
+        return None
+
+    # Format target date to RFC 3339 timestamp at midnight UTC
+    target_date_str = target_date.replace(
+        hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc
+    ).isoformat()
+
+    return [event for event in data["litcal"] if event.get("date") == target_date_str]
+
+
+def _format_liturgy_response(
+    celebrations: list, target_date: datetime, settings: dict
+) -> str:
+    """Format the liturgy of the day response."""
+    formatted_date = target_date.strftime("%A, %B %d, %Y")
+    lines = [
+        "=" * 60,
+        f"📖 LITURGY OF THE DAY - {formatted_date}",
+        "=" * 60,
+    ]
+
+    if settings:
+        lines.append(f"Locale: {settings.get('locale', 'N/A')}")
+        if settings.get("national_calendar"):
+            lines.append(f"National Calendar: {settings['national_calendar']}")
+        if settings.get("diocesan_calendar"):
+            lines.append(f"Diocesan Calendar: {settings['diocesan_calendar']}")
+        lines.append("")
+
+    for celebration in celebrations:
+        lines.append(_format_event(celebration))
+        if celebration.get("common"):
+            lines.append(f"   Common: {celebration.get('common_lcl')}")
+        if celebration.get("liturgical_year"):
+            lines.append(f"   Liturgical Year: {celebration['liturgical_year']}")
+        if celebration.get("readings"):
+            lines.append(f"   Readings: {json.dumps(celebration['readings'])}")
+        lines.append("")
+
+    lines.append("=" * 60)
+    return "✅ " + "\n".join(lines)
+
+
+def _format_announcement_response(data: dict, year: int) -> str:
+    """Format the announcement response."""
+    settings = data.get("settings", {})
+    celebrations = data.get("litcal", [])
+    if not celebrations:
+        return "❌ No liturgical calendar data found in response"
+
+    p = inflect.engine()
+    base_locale = _get_base_locale(settings.get("locale", "en"))
+
+    logging.info("Formatting announcement in locale: %s", base_locale)
+
+    # Set locale (try multiple candidates)
+    candidates = [
+        f"{base_locale}_{base_locale.upper()}.UTF-8",  # Unix
+        f"{locale.windows_locale.get(base_locale, '')}",  # Windows
+    ]
+    for loc in candidates:
+        try:
+            locale.setlocale(locale.LC_ALL, loc)
+            break
+        except locale.Error:
+            continue
+
+    # Extract events
+    keys = [
+        "AshWednesday",
+        "Easter",
+        "Ascension",
+        "Pentecost",
+        "CorpusChristi",
+        "Advent1",
+    ]
+    events = {key: _get_event(celebrations, key) for key in keys}
+
+    if any(v is None for v in events.values()):
+        return "❌ No liturgical calendar data found in response"
+
+    # Format day/month for all events
+    formatted = {
+        key: _format_day_month(evt, base_locale, p) for key, evt in events.items()
+    }
+
+    lines = [
+        f"# Epiphany announcement of Easter and Moveable Feasts for the year {year}",
+    ]
+
+    announcement_template_lcl = _load_announcement_template(base_locale)
+    lines.append(
+        announcement_template_lcl.format(
+            ash_wednesday_day=formatted["AshWednesday"][0],
+            ash_wednesday_month=formatted["AshWednesday"][1],
+            easter_day=formatted["Easter"][0],
+            easter_month=formatted["Easter"][1],
+            ascension_day=formatted["Ascension"][0],
+            ascension_month=formatted["Ascension"][1],
+            pentecost_day=formatted["Pentecost"][0],
+            pentecost_month=formatted["Pentecost"][1],
+            corpus_christi_day=formatted["CorpusChristi"][0],
+            corpus_christi_month=formatted["CorpusChristi"][1],
+            first_sunday_of_advent_day=formatted["Advent1"][0],
+            first_sunday_of_advent_month=formatted["Advent1"][1],
+        )
+    )
+
+    if settings:
+        lines.append("")
+        lines.append(f"*Locale: {settings.get('locale', 'N/A')}*  ")
+        if settings.get("national_calendar"):
+            lines.append(f"*National Calendar: {settings['national_calendar']}*  ")
+        if settings.get("diocesan_calendar"):
+            lines.append(f"*Diocesan Calendar: {settings['diocesan_calendar']}*  ")
+
+    return "\n".join(lines)
+
+
+def _get_base_locale(locale_str: str) -> str:
+    """Extract base language code from locale string."""
+    return (
+        locale.normalize(locale_str).split(".")[0].split("_")[0].split("-")[0].lower()
+    )
+
+
+def _format_day_month(
+    event: dict, locale_code: str, p: inflect.engine
+) -> tuple[str, str]:
+    """Return formatted day and month based on locale."""
+    day = event.get("day")
+    month = event.get("month")
+    month_long = event.get("month_long")
+
+    if locale_code in ["fr", "it", "de", "pt"]:
+        return str(day), month_long
+    if locale_code in ["es", "en"]:
+        return p.number_to_words(p.ordinal(day)), month_long
+    # fallback: English words with calendar.month_name
+    return p.number_to_words(p.ordinal(day)), calendar.month_name[month]
+
+
+def _load_announcement_template(base_locale: str) -> str:
+    """Load the Noveritis announcement template for a given base locale."""
+    path = NOVERITIS_DIR / f"{base_locale}.txt"
+    if not path.exists():
+        path = NOVERITIS_DIR / "en.txt"
+    if not path.exists():
+        raise ValueError(f"No translation found for locale '{base_locale}'")
+    return path.read_text(encoding="utf-8")
+
+
+def _get_event(events: list, key: str) -> dict | None:
+    """Return the first event matching the key, or None."""
+    return next((e for e in events if e.get("event_key") == key), None)
+
+
+def _calculate_year_cycles(year: int) -> dict:
+    """
+    Calculate festive and ferial liturgical year cycle,
+    respectively for weekdays, and for Sundays / Solemnities / Feasts of the Lord,
+    for a given year.
+    """
+    # Festive year cycle (A, B, C)
+    festive_cycle_index = (year - 1) % 3
+    festive_year_cycle = FESTIVE_CYCLE[festive_cycle_index]
+
+    # Ferial year cycle (I, II)
+    ferial_cycle_index = (year - 1) % 2
+    ferial_year_cycle = FERIAL_CYCLE[ferial_cycle_index]
+
+    return {
+        "festive_year_cycle": festive_year_cycle,
+        "ferial_year_cycle": ferial_year_cycle,
+    }
+
+
+# === MAIN ENTRY POINT ===
 
 
 if __name__ == "__main__":
