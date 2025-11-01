@@ -217,8 +217,8 @@ python test_mcp_list_tools.py | python litcal_server.py | jq
 ### Invalid Calendar IDs
 
 - Use `list_available_calendars` to see valid nation and diocese codes
-- Nation codes must be uppercase (IT, US, NL, VA, CA)
-- Diocese codes are lowercase with underscore (rome_it, boston_us)
+- Nation codes must be uppercase ISO 3166-1 alpha-2 codes (`IT`, `US`, `NL`, `VA`, `CA`)
+- Diocese codes are lowercase with underscore (`romamo_it`, `boston_us`)
 
 ## Data Accuracy
 
