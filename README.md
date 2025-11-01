@@ -192,10 +192,12 @@ python test_mcp_list_tools.py | python litcal_server.py | jq
 
 1. Add the function to `litcal_server.py`
 1. Decorate with `@mcp.tool()`
-1. Use single-line docstrings
-1. Ensure all parameters have empty string defaults
+1. Ensure all parameters have well defined types
+1. Method docstring should summarize the purpose of the tool,
+   and explain how the parameters should be implemented,
+   possibly offering a few examples; the LLM reads the docstring,
+   which therefore gives it context on how to use the tool
 1. Return formatted strings with emojis
-1. Update the catalog entry with the new tool name
 1. Rebuild the Docker image
 
 ## Troubleshooting
