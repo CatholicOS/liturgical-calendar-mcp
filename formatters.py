@@ -296,66 +296,71 @@ def format_announcement_response(data: dict, year: int) -> str:
     base_locale = get_base_locale(settings.get("locale", "en"))
 
     logging.info("Formatting announcement in locale: %s", base_locale)
+    previous_locale = locale.setlocale(locale.LC_ALL)
 
-    # Set locale (try multiple candidates)
-    candidates = [
-        f"{base_locale}_{base_locale.upper()}.UTF-8",  # Unix
-        f"{locale.windows_locale.get(base_locale, '')}",  # Windows
-    ]
-    for loc in candidates:
-        try:
-            locale.setlocale(locale.LC_ALL, loc)
-            break
-        except locale.Error:
-            continue
+    try:
+        # Set locale (try multiple candidates)
+        candidates = [
+            f"{base_locale}_{base_locale.upper()}.UTF-8",  # Unix
+            f"{locale.windows_locale.get(base_locale, '')}",  # Windows
+        ]
+        for loc in candidates:
+            try:
+                locale.setlocale(locale.LC_ALL, loc)
+                break
+            except locale.Error:
+                continue
 
-    # Extract events
-    keys = [
-        "AshWednesday",
-        "Easter",
-        "Ascension",
-        "Pentecost",
-        "CorpusChristi",
-        "Advent1",
-    ]
-    events = {key: get_event(celebrations, key) for key in keys}
+        # Extract events
+        keys = [
+            "AshWednesday",
+            "Easter",
+            "Ascension",
+            "Pentecost",
+            "CorpusChristi",
+            "Advent1",
+        ]
+        events = {key: get_event(celebrations, key) for key in keys}
 
-    if any(v is None for v in events.values()):
-        return "❌ No liturgical calendar data found in response"
+        if any(v is None for v in events.values()):
+            return "❌ No liturgical calendar data found in response"
 
-    # Format day/month for all events
-    formatted = {
-        key: _format_day_month(evt, base_locale, p) for key, evt in events.items()
-    }
+        # Format day/month for all events
+        formatted = {
+            key: _format_day_month(evt, base_locale, p) for key, evt in events.items()
+        }
 
-    lines = [
-        f"# Epiphany announcement of Easter and Moveable Feasts for the year {year}",
-    ]
+        lines = [
+            f"# Epiphany announcement of Easter and Moveable Feasts for the year {year}",
+        ]
 
-    announcement_template_lcl = load_announcement_template(base_locale)
-    lines.append(
-        announcement_template_lcl.format(
-            ash_wednesday_day=formatted["AshWednesday"][0],
-            ash_wednesday_month=formatted["AshWednesday"][1],
-            easter_day=formatted["Easter"][0],
-            easter_month=formatted["Easter"][1],
-            ascension_day=formatted["Ascension"][0],
-            ascension_month=formatted["Ascension"][1],
-            pentecost_day=formatted["Pentecost"][0],
-            pentecost_month=formatted["Pentecost"][1],
-            corpus_christi_day=formatted["CorpusChristi"][0],
-            corpus_christi_month=formatted["CorpusChristi"][1],
-            first_sunday_of_advent_day=formatted["Advent1"][0],
-            first_sunday_of_advent_month=formatted["Advent1"][1],
+        announcement_template_lcl = load_announcement_template(base_locale)
+        lines.append(
+            announcement_template_lcl.format(
+                ash_wednesday_day=formatted["AshWednesday"][0],
+                ash_wednesday_month=formatted["AshWednesday"][1],
+                easter_day=formatted["Easter"][0],
+                easter_month=formatted["Easter"][1],
+                ascension_day=formatted["Ascension"][0],
+                ascension_month=formatted["Ascension"][1],
+                pentecost_day=formatted["Pentecost"][0],
+                pentecost_month=formatted["Pentecost"][1],
+                corpus_christi_day=formatted["CorpusChristi"][0],
+                corpus_christi_month=formatted["CorpusChristi"][1],
+                first_sunday_of_advent_day=formatted["Advent1"][0],
+                first_sunday_of_advent_month=formatted["Advent1"][1],
+            )
         )
-    )
 
-    if settings:
-        lines.append("")
-        lines.append(f"*Locale: {settings.get('locale', 'N/A')}*  ")
-        if settings.get("national_calendar"):
-            lines.append(f"*National Calendar: {settings['national_calendar']}*  ")
-        if settings.get("diocesan_calendar"):
-            lines.append(f"*Diocesan Calendar: {settings['diocesan_calendar']}*  ")
+        if settings:
+            lines.append("")
+            lines.append(f"*Locale: {settings.get('locale', 'N/A')}*  ")
+            if settings.get("national_calendar"):
+                lines.append(f"*National Calendar: {settings['national_calendar']}*  ")
+            if settings.get("diocesan_calendar"):
+                lines.append(f"*Diocesan Calendar: {settings['diocesan_calendar']}*  ")
 
-    return "\n".join(lines)
+        return "\n".join(lines)
+    finally:
+        locale.setlocale(locale.LC_ALL, previous_locale)
+
