@@ -165,7 +165,8 @@ def _format_day_month(
     if locale_code in ["es", "en"]:
         return p.number_to_words(p.ordinal(day)), month_long
     # fallback: English words with calendar.month_name
-    return p.number_to_words(p.ordinal(day)), calendar.month_name[month]
+    month_name = calendar.month_name[month] if 1 <= month <= 12 else month_long
+    return p.number_to_words(p.ordinal(day)), month_name
 
 
 def format_suppressed_reinstated_events(data: dict) -> list:
