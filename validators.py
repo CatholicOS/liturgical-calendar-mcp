@@ -47,7 +47,10 @@ async def validate_nation(nation: str) -> str:
     is_valid_national = await CalendarMetadataCache.is_valid_national(nation)
     if not is_valid_national:
         available = await CalendarMetadataCache.get_national_calendars()
-        return f"❌ National calendar not found for: {nation}\n💡 Available nations: {', '.join(available)}"
+        raise ValueError(
+            f"❌ National calendar not found for: {nation}\n"
+            f"💡 Available nations: {', '.join(available)}"
+        )
 
     return nation.strip().upper()
 
@@ -61,7 +64,10 @@ async def validate_diocese(diocese: str) -> str:
     is_valid_diocesan = await CalendarMetadataCache.is_valid_diocesan(diocese)
     if not is_valid_diocesan:
         available = await CalendarMetadataCache.get_diocesan_calendars()
-        return f"❌ Diocesan calendar not found for: {diocese}\n💡 Available dioceses: {', '.join(available)}"
+        raise ValueError(
+            f"❌ Diocesan calendar not found for: {diocese}\n"
+            f"💡 Available dioceses: {', '.join(available)}"
+        )
 
     return diocese.strip().lower()
 
