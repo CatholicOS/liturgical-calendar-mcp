@@ -2,7 +2,6 @@
 litcal_metadata_cache.py - Simple in-memory cache for liturgical calendar metadata.
 """
 
-import sys
 import logging
 from typing import ClassVar, Optional, Dict, Set, List, TypedDict
 from datetime import datetime, timedelta
@@ -13,13 +12,8 @@ CACHE_EXPIRY_HOURS = 24
 API_BASE_URL = "https://litcal.johnromanodorazio.com/api/dev"
 DEFAULT_TIMEOUT = 30
 
-# Configure logging to stderr
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    stream=sys.stderr,
-)
-logger = logging.getLogger("litcal-cache")
+# Create logger as a child of the main litcal logger
+logger = logging.getLogger("litcal.metadata")
 
 
 class CalendarItem(TypedDict, total=False):

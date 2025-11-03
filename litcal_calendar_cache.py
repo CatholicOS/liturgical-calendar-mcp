@@ -4,19 +4,13 @@ litcal_calendar_cache.py - File-based cache for liturgical calendar data.
 
 import json
 import logging
-import sys
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, Dict, Any
 
-# Configure logging to stderr
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    stream=sys.stderr,
-)
-logger = logging.getLogger("litcal-calendar-cache")
+# Create logger as a child of the main litcal logger
+logger = logging.getLogger("litcal.cache")
 
 # === CONFIGURATION ===
 CACHE_EXPIRY_HOURS = 24 * 7  # Cache for 1 week

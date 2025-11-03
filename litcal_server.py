@@ -24,13 +24,7 @@ from validators import (
 )
 from utils import build_calendar_url, filter_celebrations_by_date
 
-# Configure logging to stderr
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    stream=sys.stderr,
-)
-logger = logging.getLogger("litcal-server")
+logger = logging.getLogger("litcal.server")
 
 # Initialize MCP server
 mcp = FastMCP(name="litcal")
@@ -548,6 +542,12 @@ async def get_announcement_easter_and_moveable_feasts(
 
 
 if __name__ == "__main__":
+    # Configure logging to stderr only when run as a script
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        stream=sys.stderr,
+    )
     logger.info("Starting Liturgical Calendar MCP server...")
 
     try:
