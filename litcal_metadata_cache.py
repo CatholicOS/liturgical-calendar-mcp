@@ -81,14 +81,14 @@ class CalendarMetadataCache:
                 data = response.json()
                 cls.update(data)
                 return True
-        except httpx.HTTPStatusError as e:
-            logger.error("HTTP error while requesting calendars metadata: %s", e)
+        except httpx.HTTPStatusError:
+            logger.exception("HTTP error while requesting calendars metadata")
             return False
-        except httpx.RequestError as e:
-            logger.error("Network error while requesting calendars metadata: %s", e)
+        except httpx.RequestError:
+            logger.exception("Network error while requesting calendars metadata")
             return False
-        except ValueError as e:
-            logger.error("Failed to parse metadata JSON: %s", e)
+        except ValueError:
+            logger.exception("Failed to parse metadata JSON")
             return False
 
     @classmethod

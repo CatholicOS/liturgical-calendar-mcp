@@ -102,8 +102,8 @@ class CalendarDataCache:
             with cache_file.open("r", encoding="utf-8") as f:
                 return json.load(f)
 
-        except (json.JSONDecodeError, OSError) as e:
-            logger.error("Error reading cache file %s: %s", cache_file, e)
+        except (json.JSONDecodeError, OSError):
+            logger.exception("Error reading cache file %s", cache_file)
             return None
 
     def get(self, key: CalendarCacheKey) -> Optional[Dict[str, Any]]:
@@ -134,8 +134,8 @@ class CalendarDataCache:
                 "Successfully cached calendar data for %s", key.to_cache_filename()
             )
 
-        except OSError as e:
-            logger.error("Error writing to cache file %s: %s", cache_file, e)
+        except OSError:
+            logger.exception("Error writing to cache file %s", cache_file)
 
     def update(self, key: CalendarCacheKey, data: Dict[str, Any]) -> None:
         """Synchronous wrapper kept for compatibility; prefer ``async_update``."""

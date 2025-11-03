@@ -97,7 +97,7 @@ async def get_general_calendar(
             return format_calendar_summary(data)
 
     except ValueError as e:
-        logger.error("Error: %s", e)
+        logger.exception("Error")
         return f"❌ Error: {str(e)}"
     except httpx.HTTPStatusError as e:
         if e.response.status_code == 404:
@@ -107,19 +107,17 @@ async def get_general_calendar(
                 target_locale,
             )
             return f"❌ General Roman Calendar with year {year} and locale {target_locale} not found"
-        logger.error(
-            "HTTP error fetching General Roman Calendar for year %s and locale %s: %s",
+        logger.exception(
+            "HTTP error fetching General Roman Calendar for year %s and locale %s",
             year,
             target_locale,
-            e,
         )
         return f"❌ HTTP error fetching General Roman Calendar for year {year} and locale {target_locale}: {e.response.status_code} - {e.response.text}"
     except httpx.RequestError as e:
-        logger.error(
-            "Network error fetching General Roman Calendar for year %s and locale %s: %s",
+        logger.exception(
+            "Network error fetching General Roman Calendar for year %s and locale %s",
             year,
             target_locale,
-            e,
         )
         return f"❌ Network error fetching General Roman Calendar for year {year} and locale {target_locale}: {str(e)}"
 
@@ -187,17 +185,17 @@ async def get_national_calendar(
             return format_calendar_summary(data)
 
     except ValueError as e:
-        logger.error("Error: %s", e)
+        logger.exception("Error")
         return f"❌ Error: {str(e)}"
     except httpx.HTTPStatusError as e:
         if e.response.status_code == 404:
             logger.error("National calendar not found for nation: %s", nation)
             available = await CalendarMetadataCache.get_national_calendars()
             return f"❌ National calendar not found for: {nation}\n💡 Available nations: {', '.join(available)}"
-        logger.error("HTTP error fetching national calendar: %s", e)
+        logger.exception("HTTP error fetching national calendar")
         return f"❌ HTTP error fetching national calendar: {e.response.status_code} - {e.response.text}"
     except httpx.RequestError as e:
-        logger.error("Network error fetching national calendar: %s", e)
+        logger.exception("Network error fetching national calendar")
         return f"❌ Network error fetching national calendar: {str(e)}"
 
 
@@ -264,17 +262,17 @@ async def get_diocesan_calendar(
             return format_calendar_summary(data)
 
     except ValueError as e:
-        logger.error("Error: %s", e)
+        logger.exception("Error")
         return f"❌ Error: {str(e)}"
     except httpx.HTTPStatusError as e:
         if e.response.status_code == 404:
             logger.error("Diocesan calendar not found for diocese: %s", diocese)
             available = await CalendarMetadataCache.get_diocesan_calendars()
             return f"❌ Diocesan calendar not found for: {diocese}\n💡 Available diocese ids: {', '.join(available)}"
-        logger.error("HTTP error fetching diocesan calendar: %s", e)
+        logger.exception("HTTP error fetching diocesan calendar")
         return f"❌ HTTP error fetching diocesan calendar: {e.response.status_code} - {e.response.text}"
     except httpx.RequestError as e:
-        logger.error("Network error fetching diocesan calendar: %s", e)
+        logger.exception("Network error fetching diocesan calendar")
         return f"❌ Network error fetching diocesan calendar: {str(e)}"
 
 
@@ -335,10 +333,10 @@ async def list_available_calendars() -> str:
 
         return "✅ " + "\n".join(lines)
     except (KeyError, AttributeError) as e:
-        logger.error("Error accessing calendar metadata: %s", e)
+        logger.exception("Error accessing calendar metadata")
         return f"❌ Error accessing calendar data: {str(e)}"
     except (ValueError, LookupError) as e:
-        logger.error("Error processing calendar data: %s", e)
+        logger.exception("Error processing calendar data")
         return f"❌ Error processing calendar data: {str(e)}"
 
 
@@ -445,13 +443,13 @@ async def get_liturgy_of_the_day(
             )
 
     except ValueError as e:
-        logger.error("Error: %s", e)
+        logger.exception("Error")
         return f"❌ Error: {str(e)}"
     except httpx.HTTPStatusError as e:
-        logger.error("HTTP error fetching liturgy: %s", e)
+        logger.exception("HTTP error fetching liturgy")
         return f"❌ HTTP error: {e.response.status_code} - {e.response.text}"
     except httpx.RequestError as e:
-        logger.error("Network error fetching liturgy: %s", e)
+        logger.exception("Network error fetching liturgy")
         return f"❌ Network error: {str(e)}"
 
 
@@ -526,13 +524,13 @@ async def get_announcement_easter_and_moveable_feasts(
             return format_announcement_response(data, year_int)
 
     except ValueError as e:
-        logger.error("Error: %s", e)
+        logger.exception("Error")
         return f"❌ Error: {str(e)}"
     except httpx.HTTPStatusError as e:
-        logger.error("HTTP error fetching moveable feasts: %s", e)
+        logger.exception("HTTP error fetching moveable feasts")
         return f"❌ HTTP error fetching moveable feasts: {e.response.status_code} - {e.response.text}"
     except httpx.RequestError as e:
-        logger.error("Network error fetching moveable feasts: %s", e)
+        logger.exception("Network error fetching moveable feasts")
         return f"❌ Network error fetching moveable feasts: {str(e)}"
 
 
@@ -550,9 +548,9 @@ if __name__ == "__main__":
 
     try:
         mcp.run(transport="stdio")
-    except (KeyboardInterrupt, SystemExit) as e:
-        logger.error("Server interrupted: %s", e, exc_info=True)
+    except (KeyboardInterrupt, SystemExit):
+        logger.exception("Server interrupted")
         sys.exit(1)
-    except RuntimeError as e:
-        logger.error("Runtime error: %s", e, exc_info=True)
+    except RuntimeError:
+        logger.exception("Runtime error")
         sys.exit(1)
