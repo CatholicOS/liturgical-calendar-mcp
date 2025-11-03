@@ -41,7 +41,7 @@ calendar_cache = CalendarDataCache()
 
 @mcp.tool()
 async def get_general_calendar(
-    year: int | None = None, target_locale: str = "en"
+    year: int | None = None, locale: str = "en"
 ) -> str:
     """
     Retrieve the General Roman Calendar for a specific year with optional locale.
@@ -53,23 +53,23 @@ async def get_general_calendar(
     Example: locale='fr', year='2023'
     """
     logger.info(
-        "Fetching General Calendar for year %s (locale %s)", year, target_locale
+        "Fetching General Calendar for year %s (locale %s)", year, locale
     )
 
     try:
         year_int = validate_year(year)
-        target_locale = await CalendarMetadataCache.get_supported_locale(
-            "general", "", target_locale
+        locale = await CalendarMetadataCache.get_supported_locale(
+            "general", "", locale
         )
 
         # Try to get from cache first
-        cache_key = CalendarCacheKey("general", "", year_int, target_locale)
+        cache_key = CalendarCacheKey("general", "", year_int, locale)
         cached_data = await calendar_cache.async_get(cache_key)
         if cached_data is not None:
             logger.info(
                 "Using cached general calendar data for year %s (locale: %s)",
                 year_int,
-                target_locale,
+                locale,
             )
             return format_calendar_summary(cached_data)
 
@@ -77,7 +77,7 @@ async def get_general_calendar(
         url = build_calendar_url("general", "", year_int)
         headers = {
             "Accept": "application/json",
-            "Accept-Language": target_locale,
+            "Accept-Language": locale,
         }
 
         async with httpx.AsyncClient() as client:
@@ -104,27 +104,27 @@ async def get_general_calendar(
             logger.error(
                 "General Roman Calendar with year %s and locale %s not found",
                 year,
-                target_locale,
+                locale,
             )
-            return f"❌ General Roman Calendar with year {year} and locale {target_locale} not found"
+            return f"❌ General Roman Calendar with year {year} and locale {locale} not found"
         logger.exception(
             "HTTP error fetching General Roman Calendar for year %s and locale %s",
             year,
-            target_locale,
+            locale,
         )
-        return f"❌ HTTP error fetching General Roman Calendar for year {year} and locale {target_locale}: {e.response.status_code} - {e.response.text}"
+        return f"❌ HTTP error fetching General Roman Calendar for year {year} and locale {locale}: {e.response.status_code} - {e.response.text}"
     except httpx.RequestError as e:
         logger.exception(
             "Network error fetching General Roman Calendar for year %s and locale %s",
             year,
-            target_locale,
+            locale,
         )
-        return f"❌ Network error fetching General Roman Calendar for year {year} and locale {target_locale}: {str(e)}"
+        return f"❌ Network error fetching General Roman Calendar for year {year} and locale {locale}: {str(e)}"
 
 
 @mcp.tool()
 async def get_national_calendar(
-    nation: str = "", year: int | None = None, target_locale: str = "en_US"
+    nation: str = "", year: int | None = None, locale: str = "en_US"
 ) -> str:
     """
     Retrieve the liturgical calendar for a specific nation and year, and optional locale.
@@ -140,24 +140,24 @@ async def get_national_calendar(
         "Fetching National Calendar for %s for year %s (locale %s)",
         nation,
         year,
-        target_locale,
+        locale,
     )
 
     try:
         year_int = validate_year(year)
         nation_id = await validate_nation(nation)
-        target_locale = await CalendarMetadataCache.get_supported_locale(
-            "national", nation_id, target_locale
+        locale = await CalendarMetadataCache.get_supported_locale(
+            "national", nation_id, locale
         )
         # Try to get from cache first
-        cache_key = CalendarCacheKey("national", nation_id, year_int, target_locale)
+        cache_key = CalendarCacheKey("national", nation_id, year_int, locale)
         cached_data = await calendar_cache.async_get(cache_key)
         if cached_data is not None:
             logger.info(
                 "Using cached national calendar data for %s year %s (locale: %s)",
                 nation_id,
                 year_int,
-                target_locale,
+                locale,
             )
             return format_calendar_summary(cached_data)
 
@@ -165,7 +165,7 @@ async def get_national_calendar(
         url = build_calendar_url("national", nation_id, year_int)
         headers = {
             "Accept": "application/json",
-            "Accept-Language": target_locale,
+            "Accept-Language": locale,
         }
 
         async with httpx.AsyncClient() as client:
@@ -201,7 +201,7 @@ async def get_national_calendar(
 
 @mcp.tool()
 async def get_diocesan_calendar(
-    diocese: str = "", year: int | None = None, target_locale: str = "en_US"
+    diocese: str = "", year: int | None = None, locale: str = "en_US"
 ) -> str:
     """
     Retrieve the liturgical calendar for a specific diocese and year, and optional locale.
@@ -217,24 +217,24 @@ async def get_diocesan_calendar(
         "Fetching Diocesan Calendar for %s for the year %s (locale %s)",
         diocese,
         year,
-        target_locale,
+        locale,
     )
 
     try:
         year_int = validate_year(year)
         diocese_id = await validate_diocese(diocese)
-        target_locale = await CalendarMetadataCache.get_supported_locale(
-            "diocesan", diocese_id, target_locale
+        locale = await CalendarMetadataCache.get_supported_locale(
+            "diocesan", diocese_id, locale
         )
         # Try to get from cache first
-        cache_key = CalendarCacheKey("diocesan", diocese_id, year_int, target_locale)
+        cache_key = CalendarCacheKey("diocesan", diocese_id, year_int, locale)
         cached_data = await calendar_cache.async_get(cache_key)
         if cached_data is not None:
             logger.info(
                 "Using cached diocesan calendar data for %s year %s (locale: %s)",
                 diocese_id,
                 year_int,
-                target_locale,
+                locale,
             )
             return format_calendar_summary(cached_data)
 
@@ -242,7 +242,7 @@ async def get_diocesan_calendar(
         url = build_calendar_url("diocesan", diocese_id, year_int)
         headers = {
             "Accept": "application/json",
-            "Accept-Language": target_locale,
+            "Accept-Language": locale,
         }
 
         async with httpx.AsyncClient() as client:
@@ -345,7 +345,7 @@ async def get_liturgy_of_the_day(
     date: str = "",
     calendar_type: str = "general",
     calendar_id: str = "",
-    target_locale: str = "en",
+    locale: str = "en",
 ) -> str:
     """
     Retrieve the liturgical celebrations for a specific date from any calendar.
@@ -355,20 +355,20 @@ async def get_liturgy_of_the_day(
     - calendar_type: Type of calendar - "general", "national", or "diocesan". Defaults to "general".
     - calendar_id: Calendar identifier (nation code like 'US' or diocese id like 'romamo_it').
                    Required for national/diocesan calendars, ignored for general calendar.
-    - target_locale: Locale code for translations (e.g., "en", "fr_CA"). Must have a regional identifier for national or diocesan calendars. Defaults to "en".
+    - locale: Locale code for translations (e.g., "en", "fr_CA"). Must have a regional identifier for national or diocesan calendars. Defaults to "en".
 
     Examples:
     - Today's liturgy in the general roman calendar: date='', calendar_type='general'
-    - Liturgy for a specific date in US: date='2024-12-25', calendar_type='national', calendar_id='US', target_locale='en_US'
-    - Liturgy for a specific date in Rome diocese: date='2024-06-29', calendar_type='diocesan', calendar_id='romamo_it', target_locale='it_IT'
-    - Today's liturgy in the calendar for Canada in French: date='', calendar_type='national', calendar_id='CA', target_locale='fr_CA'
+    - Liturgy for a specific date in US: date='2024-12-25', calendar_type='national', calendar_id='US', locale='en_US'
+    - Liturgy for a specific date in Rome diocese: date='2024-06-29', calendar_type='diocesan', calendar_id='romamo_it', locale='it_IT'
+    - Today's liturgy in the calendar for Canada in French: date='', calendar_type='national', calendar_id='CA', locale='fr_CA'
     """
     logger.info(
         "Fetching liturgy of the day for date %s, calendar_type %s, calendar_id %s, locale %s",
         date,
         calendar_type,
         calendar_id,
-        target_locale,
+        locale,
     )
 
     try:
@@ -383,13 +383,13 @@ async def get_liturgy_of_the_day(
             calendar_id = await validate_diocese(calendar_id)
 
         # Get locale and try cache first
-        target_locale = await CalendarMetadataCache.get_supported_locale(
-            calendar_type, calendar_id, target_locale
+        locale = await CalendarMetadataCache.get_supported_locale(
+            calendar_type, calendar_id, locale
         )
 
         # Try to get calendar from cache first
         cache_key = CalendarCacheKey(
-            calendar_type, calendar_id, target_date.year, target_locale
+            calendar_type, calendar_id, target_date.year, locale
         )
         cached_data = await calendar_cache.async_get(cache_key)
         if cached_data is not None:
@@ -398,7 +398,7 @@ async def get_liturgy_of_the_day(
                 target_date.date(),
                 calendar_type,
                 calendar_id or "general",
-                target_locale,
+                locale,
             )
             celebrations = filter_celebrations_by_date(cached_data, target_date)
             if celebrations:
@@ -411,7 +411,7 @@ async def get_liturgy_of_the_day(
         logger.info("Using calendar URL: %s", url)
         headers = {
             "Accept": "application/json",
-            "Accept-Language": target_locale,
+            "Accept-Language": locale,
         }
 
         async with httpx.AsyncClient() as client:
@@ -457,7 +457,7 @@ async def get_liturgy_of_the_day(
 async def get_announcement_easter_and_moveable_feasts(
     calendar_type: str = "general",
     calendar_id: str = "",
-    target_locale: str = "en",
+    locale: str = "en",
     year: int | None = None,
 ) -> str:
     """
@@ -469,7 +469,7 @@ async def get_announcement_easter_and_moveable_feasts(
     - calendar_type: Type of calendar - "general", "national", or "diocesan". Defaults to "general".
     - calendar_id: Calendar identifier (nation code like 'US' or diocese id like 'romamo_it').
                    Required for national/diocesan calendars, ignored for general calendar.
-    - target_locale: Locale code for translations (e.g., "en", "fr_CA"). Must have a regional identifier for national or diocesan calendars. Defaults to "en".
+    - locale: Locale code for translations (e.g., "en", "fr_CA"). Must have a regional identifier for national or diocesan calendars. Defaults to "en".
     - year: Four-digit year (e.g., `2024`). Defaults to current year if not provided.
     """
     logger.info("Fetching Easter and moveable feasts for year %s", year)
@@ -488,13 +488,13 @@ async def get_announcement_easter_and_moveable_feasts(
         # Build URL and get locale
         url = build_calendar_url(calendar_type, calendar_id, year_int)
         logger.info("Using calendar URL: %s", url)
-        target_locale = await CalendarMetadataCache.get_supported_locale(
-            calendar_type, calendar_id, target_locale
+        locale = await CalendarMetadataCache.get_supported_locale(
+            calendar_type, calendar_id, locale
         )
 
         # Try to get calendar from cache first
         cache_key = CalendarCacheKey(
-            calendar_type, calendar_id, year_int, target_locale
+            calendar_type, calendar_id, year_int, locale
         )
         cached_data = await calendar_cache.async_get(cache_key)
         if cached_data is not None:
@@ -504,7 +504,7 @@ async def get_announcement_easter_and_moveable_feasts(
         # Make API request
         headers = {
             "Accept": "application/json",
-            "Accept-Language": target_locale,
+            "Accept-Language": locale,
         }
 
         async with httpx.AsyncClient() as client:
