@@ -5,6 +5,7 @@ litcal_calendar_cache.py - File-based cache for liturgical calendar data.
 import json
 import logging
 import sys
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, Dict, Any
@@ -22,6 +23,48 @@ CACHE_EXPIRY_HOURS = 24 * 7  # Cache for 1 week
 CACHE_DIR = Path("cache")  # Will be created in the same directory as the script
 
 
+@dataclass(frozen=True)
+class CalendarCacheKey:
+    """
+    Immutable key for identifying cached calendar data.
+
+    Attributes:
+        calendar_type: Type of calendar ("general", "national", or "diocesan")
+        calendar_id: Calendar identifier (nation code or diocese id, empty for general)
+        year: Calendar year
+        locale: Locale code for the calendar content (default: "en")
+    """
+    calendar_type: str
+    calendar_id: str
+    year: int
+    locale: str = "en"
+
+    def __post_init__(self):
+        """Validate the calendar type."""
+        valid_types = ("general", "national", "diocesan")
+        if self.calendar_type not in valid_types:
+            raise ValueError(
+                f"Invalid calendar type: {self.calendar_type}. "
+                f"Must be one of {valid_types}"
+            )
+
+    def to_cache_filename(self) -> str:
+        """
+        Build a unique cache filename for this key.
+
+        Returns:
+            A unique cache key string including all parameters
+        """
+        locale_part = self.locale.replace("-", "_")  # Normalize locale format
+
+        if self.calendar_type == "general":
+            return f"general_{self.year}_{locale_part}"
+        if self.calendar_type == "national":
+            return f"national_{self.calendar_id.upper()}_{self.year}_{locale_part}"
+        # diocesan
+        return f"diocesan_{self.calendar_id.lower()}_{self.year}_{locale_part}"
+
+
 class CalendarDataCache:
     """File-based cache for liturgical calendar data."""
 
@@ -34,51 +77,22 @@ class CalendarDataCache:
         """Create cache directory if it doesn't exist."""
         self._cache_dir.mkdir(exist_ok=True)
 
-    def _build_cache_key(
-        self, calendar_type: str, calendar_id: str, year: int, locale: str = "en"
-    ) -> str:
-        """
-        Build a unique cache key for the calendar request.
-
-        Args:
-            calendar_type: Type of calendar ("general", "national", or "diocesan")
-            calendar_id: Calendar identifier (nation code or diocese id, empty for general)
-            year: Calendar year
-            locale: Locale code for the calendar content
-
-        Returns:
-            A unique cache key string including all parameters
-        """
-        locale_part = locale.replace("-", "_")  # Normalize locale format
-
-        if calendar_type == "general":
-            return f"general_{year}_{locale_part}"
-        elif calendar_type == "national":
-            return f"national_{calendar_id.upper()}_{year}_{locale_part}"
-        else:  # diocesan
-            return f"diocesan_{calendar_id.lower()}_{year}_{locale_part}"
-
-    def _get_cache_file(self, cache_key: str) -> Path:
+    def _get_cache_file(self, key: CalendarCacheKey) -> Path:
         """Get the cache file path for a given key."""
-        return self._cache_dir / f"{cache_key}.json"
+        filename = key.to_cache_filename()
+        return self._cache_dir / f"{filename}.json"
 
-    def get(
-        self, calendar_type: str, calendar_id: str, year: int, locale: str = "en"
-    ) -> Optional[Dict[str, Any]]:
+    def get(self, key: CalendarCacheKey) -> Optional[Dict[str, Any]]:
         """
         Retrieve cached calendar data if available and not expired.
 
         Args:
-            calendar_type: Type of calendar ("general", "national", or "diocesan")
-            calendar_id: Calendar identifier (nation code or diocese id, empty for general)
-            year: Calendar year
-            locale: Locale code for the calendar content
+            key: CalendarCacheKey identifying the calendar data to retrieve
 
         Returns:
             The cached calendar data if available and not expired, None otherwise
         """
-        cache_key = self._build_cache_key(calendar_type, calendar_id, year, locale)
-        cache_file = self._get_cache_file(cache_key)
+        cache_file = self._get_cache_file(key)
 
         if not cache_file.exists():
             return None
@@ -89,7 +103,7 @@ class CalendarDataCache:
 
             # Check if cache has expired
             if age > timedelta(hours=CACHE_EXPIRY_HOURS):
-                logger.info("Cache expired for %s", cache_key)
+                logger.info("Cache expired for %s", key.to_cache_filename())
                 return None
 
             # Read and return cached data
@@ -100,69 +114,45 @@ class CalendarDataCache:
             logger.error("Error reading cache file %s: %s", cache_file, e)
             return None
 
-    def set(
-        self,
-        calendar_type: str,
-        calendar_id: str,
-        year: int,
-        data: Dict[str, Any],
-        locale: str = "en",
-    ) -> None:
+    def set(self, key: CalendarCacheKey, data: Dict[str, Any]) -> None:
         """
         Store calendar data in the cache.
 
         Args:
-            calendar_type: Type of calendar ("general", "national", or "diocesan")
-            calendar_id: Calendar identifier (nation code or diocese id, empty for general)
-            year: Calendar year
+            key: CalendarCacheKey identifying the calendar data
             data: Calendar data to cache
-            locale: Locale code for the calendar content
         """
-        cache_key = self._build_cache_key(calendar_type, calendar_id, year, locale)
-        cache_file = self._get_cache_file(cache_key)
+        cache_file = self._get_cache_file(key)
 
         try:
             # Write data to cache file
             with cache_file.open("w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
 
-            logger.info("Successfully cached calendar data for %s", cache_key)
+            logger.info("Successfully cached calendar data for %s", key.to_cache_filename())
 
         except OSError as e:
             logger.error("Error writing to cache file %s: %s", cache_file, e)
 
-    def clear(
-        self, calendar_type: str = "", calendar_id: str = "", year: Optional[int] = None
-    ) -> None:
+    def clear(self,  key: Optional[CalendarCacheKey] = None) -> None:
         """
         Clear cached data. If no parameters are provided, clears all cache.
 
         Args:
-            calendar_type: Optional calendar type to clear
-            calendar_id: Optional calendar ID to clear
-            year: Optional year to clear
+            key: Optional CalendarCacheKey to clear specific cached data.
+                 If None, clears all cache files.
         """
-        if not any([calendar_type, calendar_id, year]):
+        if key is None:
             # Clear all cache
             for file in self._cache_dir.glob("*.json"):
                 file.unlink()
             logger.info("Cleared all calendar cache")
             return
 
-        pattern = ""
-        if calendar_type:
-            pattern += f"{calendar_type}_"
-            if calendar_id:
-                id_part = (
-                    calendar_id.upper()
-                    if calendar_type == "national"
-                    else calendar_id.lower()
-                )
-                pattern += f"{id_part}_"
-                if year:
-                    pattern += f"{year}"
-
-        if pattern:
-            for file in self._cache_dir.glob(f"{pattern}*.json"):
-                file.unlink()
-            logger.info("Cleared cache matching pattern: %s", pattern)
+        # Clear specific cache file
+        cache_file = self._get_cache_file(key)
+        if cache_file.exists():
+            cache_file.unlink()
+            logger.info("Cleared cache for %s", key.to_cache_filename())
+        else:
+            logger.info("No cache found for %s", key.to_cache_filename())
