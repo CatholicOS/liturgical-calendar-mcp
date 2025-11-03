@@ -21,32 +21,10 @@ The functions included in this module are:
 - format_calendar_summary(data: dict): Format calendar data into a readable summary
 """
 
-import os
-import sys
 import re
 from datetime import datetime
 import logging
 import locale
-
-# resolve incompatibility between inflect and typeguard under Python 3.12
-# MUST be set BEFORE importing inflect
-os.environ["TYPEGUARD_DISABLE"] = "1"
-
-
-# Create a mock typeguard module to prevent the actual one from loading
-class MockTypeguard:  # pylint: disable=too-few-public-methods
-    """Mock typeguard module to avoid Python 3.12 compatibility issues."""
-
-    @staticmethod
-    def typechecked(func):
-        """No-op decorator that just returns the function unchanged."""
-        return func
-
-
-sys.modules["typeguard"] = MockTypeguard()
-
-# pylint: disable=wrong-import-position
-# flake8: noqa: E402
 import calendar
 import json
 import inflect
@@ -56,8 +34,6 @@ from utils import (
     get_event,
     load_announcement_template,
 )
-
-# pylint: enable=wrong-import-position
 
 
 def _format_event(event_data: dict) -> str:
