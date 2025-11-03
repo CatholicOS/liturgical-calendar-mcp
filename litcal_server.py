@@ -64,7 +64,7 @@ async def get_general_calendar(
 
         # Try to get from cache first
         cache_key = CalendarCacheKey("general", "", year_int, target_locale)
-        cached_data = calendar_cache.get(cache_key)
+        cached_data = await calendar_cache.async_get(cache_key)
         if cached_data is not None:
             logger.info(
                 "Using cached general calendar data for year %s (locale: %s)",
@@ -90,8 +90,8 @@ async def get_general_calendar(
             response.raise_for_status()
             data = response.json()
 
-            # Cache the response
-            calendar_cache.update(cache_key, data)
+            # Cache the response (off the event loop)
+            await calendar_cache.async_update(cache_key, data)
 
             # Format and return response
             return format_calendar_summary(data)
@@ -151,10 +151,9 @@ async def get_national_calendar(
         target_locale = await CalendarMetadataCache.get_supported_locale(
             "national", nation_id, target_locale
         )
-
         # Try to get from cache first
         cache_key = CalendarCacheKey("national", nation_id, year_int, target_locale)
-        cached_data = calendar_cache.get(cache_key)
+        cached_data = await calendar_cache.async_get(cache_key)
         if cached_data is not None:
             logger.info(
                 "Using cached national calendar data for %s year %s (locale: %s)",
@@ -181,8 +180,8 @@ async def get_national_calendar(
             response.raise_for_status()
             data = response.json()
 
-            # Cache the response
-            calendar_cache.update(cache_key, data)
+            # Cache the response (off the event loop)
+            await calendar_cache.async_update(cache_key, data)
 
             # Format and return response
             return format_calendar_summary(data)
@@ -229,10 +228,9 @@ async def get_diocesan_calendar(
         target_locale = await CalendarMetadataCache.get_supported_locale(
             "diocesan", diocese_id, target_locale
         )
-
         # Try to get from cache first
         cache_key = CalendarCacheKey("diocesan", diocese_id, year_int, target_locale)
-        cached_data = calendar_cache.get(cache_key)
+        cached_data = await calendar_cache.async_get(cache_key)
         if cached_data is not None:
             logger.info(
                 "Using cached diocesan calendar data for %s year %s (locale: %s)",
@@ -259,8 +257,8 @@ async def get_diocesan_calendar(
             response.raise_for_status()
             data = response.json()
 
-            # Cache the response
-            calendar_cache.update(cache_key, data)
+            # Cache the response (off the event loop)
+            await calendar_cache.async_update(cache_key, data)
 
             # Format and return response
             return format_calendar_summary(data)
@@ -395,7 +393,7 @@ async def get_liturgy_of_the_day(
         cache_key = CalendarCacheKey(
             calendar_type, calendar_id, target_date.year, target_locale
         )
-        cached_data = calendar_cache.get(cache_key)
+        cached_data = await calendar_cache.async_get(cache_key)
         if cached_data is not None:
             logger.info(
                 "Using cached calendar data for date %s, calendar %s_%s (locale: %s)",
@@ -428,8 +426,8 @@ async def get_liturgy_of_the_day(
             response.raise_for_status()
             data = response.json()
 
-            # Cache the full calendar response
-            calendar_cache.update(cache_key, data)
+            # Cache the full calendar response (off the event loop)
+            await calendar_cache.async_update(cache_key, data)
 
             # Filter celebrations for target date
             celebrations = filter_celebrations_by_date(data, target_date)
@@ -500,7 +498,7 @@ async def get_announcement_easter_and_moveable_feasts(
         cache_key = CalendarCacheKey(
             calendar_type, calendar_id, year_int, target_locale
         )
-        cached_data = calendar_cache.get(cache_key)
+        cached_data = await calendar_cache.async_get(cache_key)
         if cached_data is not None:
             # Format and return response
             return format_announcement_response(cached_data, year_int)
@@ -521,8 +519,8 @@ async def get_announcement_easter_and_moveable_feasts(
             response.raise_for_status()
             data = response.json()
 
-            # Cache the full calendar response
-            calendar_cache.update(cache_key, data)
+            # Cache the full calendar response (off the event loop)
+            await calendar_cache.async_update(cache_key, data)
 
             # Format and return response
             return format_announcement_response(data, year_int)

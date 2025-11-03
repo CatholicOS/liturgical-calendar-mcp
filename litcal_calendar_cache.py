@@ -6,6 +6,7 @@ import json
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+import asyncio
 from pathlib import Path
 from typing import Optional, Dict, Any
 
@@ -77,15 +78,11 @@ class CalendarDataCache:
         filename = key.to_cache_filename()
         return self._cache_dir / f"{filename}.json"
 
-    def get(self, key: CalendarCacheKey) -> Optional[Dict[str, Any]]:
-        """
-        Retrieve cached calendar data if available and not expired.
+    def _get_sync(self, key: CalendarCacheKey) -> Optional[Dict[str, Any]]:
+        """Synchronous implementation of get -- kept as a helper so async
+        variant can run this off the event loop with asyncio.to_thread.
 
-        Args:
-            key: CalendarCacheKey identifying the calendar data to retrieve
-
-        Returns:
-            The cached calendar data if available and not expired, None otherwise
+        This function performs blocking file I/O.
         """
         cache_file = self._get_cache_file(key)
 
@@ -109,14 +106,23 @@ class CalendarDataCache:
             logger.error("Error reading cache file %s: %s", cache_file, e)
             return None
 
-    def update(self, key: CalendarCacheKey, data: Dict[str, Any]) -> None:
-        """
-        Store calendar data in the cache.
+    def get(self, key: CalendarCacheKey) -> Optional[Dict[str, Any]]:
+        """Synchronous wrapper kept for callers that expect blocking behavior.
 
-        Args:
-            key: CalendarCacheKey identifying the calendar data
-            data: Calendar data to cache
+        Prefer using ``async_get`` from asyncio-based handlers so file I/O
+        runs off the event loop.
         """
+        return self._get_sync(key)
+
+    async def async_get(self, key: CalendarCacheKey) -> Optional[Dict[str, Any]]:
+        """Asynchronous get which offloads blocking file I/O to a thread pool.
+
+        Use this from asyncio-based handlers to avoid blocking the event loop.
+        """
+        return await asyncio.to_thread(self._get_sync, key)
+
+    def _update_sync(self, key: CalendarCacheKey, data: Dict[str, Any]) -> None:
+        """Synchronous implementation of update; used by async wrapper."""
         cache_file = self._get_cache_file(key)
 
         try:
@@ -130,6 +136,17 @@ class CalendarDataCache:
 
         except OSError as e:
             logger.error("Error writing to cache file %s: %s", cache_file, e)
+
+    def update(self, key: CalendarCacheKey, data: Dict[str, Any]) -> None:
+        """Synchronous wrapper kept for compatibility; prefer ``async_update``."""
+        return self._update_sync(key, data)
+
+    async def async_update(self, key: CalendarCacheKey, data: Dict[str, Any]) -> None:
+        """Asynchronous update which offloads blocking file I/O to a thread pool.
+
+        Use this from asyncio-based handlers to avoid blocking the event loop.
+        """
+        await asyncio.to_thread(self._update_sync, key, data)
 
     def clear(self, key: Optional[CalendarCacheKey] = None) -> None:
         """
