@@ -153,7 +153,7 @@ async def get_national_calendar(
 
     try:
         year_int = validate_year(year)
-        nation_id = validate_nation(nation)
+        nation_id = await validate_nation(nation)
         target_locale = await CalendarMetadataCache.get_supported_locale(
             "national", nation_id, target_locale
         )
@@ -231,7 +231,7 @@ async def get_diocesan_calendar(
 
     try:
         year_int = validate_year(year)
-        diocese_id = validate_diocese(diocese)
+        diocese_id = await validate_diocese(diocese)
         target_locale = await CalendarMetadataCache.get_supported_locale(
             "diocesan", diocese_id, target_locale
         )
@@ -388,9 +388,9 @@ async def get_liturgy_of_the_day(
 
         # Validate calendar ID if needed
         if calendar_type == "national":
-            calendar_id = validate_nation(calendar_id)
+            calendar_id = await validate_nation(calendar_id)
         elif calendar_type == "diocesan":
-            calendar_id = validate_diocese(calendar_id)
+            calendar_id = await validate_diocese(calendar_id)
 
         # Get locale and try cache first
         target_locale = await CalendarMetadataCache.get_supported_locale(
@@ -489,9 +489,9 @@ async def get_announcement_easter_and_moveable_feasts(
 
         # Validate calendar ID if needed
         if calendar_type == "national":
-            calendar_id = validate_nation(calendar_id)
+            calendar_id = await validate_nation(calendar_id)
         elif calendar_type == "diocesan":
-            calendar_id = validate_diocese(calendar_id)
+            calendar_id = await validate_diocese(calendar_id)
 
         # Build URL and get locale
         url = build_calendar_url(calendar_type, calendar_id, year_int)
