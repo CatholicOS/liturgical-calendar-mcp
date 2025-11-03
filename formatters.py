@@ -1,0 +1,360 @@
+"""
+formatters.py
+
+This module contains functions to format liturgical events for display.
+
+The formatter functions are designed to be used by the Liturgical Calendar
+MCP server to format data retrieved from the Liturgical Calendar API.
+
+The functions included in this module are:
+
+- _format_event(event_data: dict): Format a single liturgical event for display
+- _format_header(): Format the header for a liturgical calendar
+- _format_settings(settings: dict): Format calendar settings for display
+- _format_holy_days(events: list): Format Holy Days of Obligation for display
+- _format_liturgical_seasons(events: list): Format key liturgical season events for display
+- _format_particular_celebrations(events: list): Format celebrations particular to the current calendar, for display
+- _format_day_month(day: int, month: int): Format a day and month for display
+- format_liturgy_response(data: dict): Format liturgy data into a readable summary
+- format_announcement_response(data: dict): Format announcement data into a readable summary
+- format_suppressed_reinstated_events(data: dict): Format suppressed and reinstated events for display
+- format_calendar_summary(data: dict): Format calendar data into a readable summary
+"""
+
+import os
+import sys
+import re
+from datetime import datetime
+import logging
+import locale
+
+# resolve incompatibility between inflect and typeguard under Python 3.12
+# MUST be set BEFORE importing inflect
+os.environ["TYPEGUARD_DISABLE"] = "1"
+
+
+# Create a mock typeguard module to prevent the actual one from loading
+class MockTypeguard:  # pylint: disable=too-few-public-methods
+    """Mock typeguard module to avoid Python 3.12 compatibility issues."""
+
+    @staticmethod
+    def typechecked(func):
+        """No-op decorator that just returns the function unchanged."""
+        return func
+
+
+sys.modules["typeguard"] = MockTypeguard()
+
+# pylint: disable=wrong-import-position
+# flake8: noqa: E402
+import calendar
+import json
+import inflect
+from utils import (
+    calculate_year_cycles,
+    get_base_locale,
+    get_event,
+    load_announcement_template,
+)
+
+# pylint: enable=wrong-import-position
+
+
+def _format_event(event_data: dict) -> str:
+    """Format a single liturgical event for display."""
+    name = event_data.get("name", "Unknown")
+    date = event_data.get("date", "Unknown")
+    color = ", ".join(event_data.get("color_lcl", []))
+    grade = event_data.get("grade_lcl", "Unknown")
+
+    return f"📅 {name}\n   Date: {date}\n   Grade: {grade}\n   Color: {color}"
+
+
+def _format_header() -> list:
+    """Format calendar header for display."""
+    return ["=" * 60, "📖 LITURGICAL CALENDAR", "=" * 60]
+
+
+def _format_settings(settings: dict) -> list:
+    """Format calendar settings for display."""
+    lines = []
+    if settings:
+        lines.append(f"Locale: {settings.get('locale', 'N/A')}")
+        for key, label in [
+            ("national_calendar", "National Calendar"),
+            ("diocesan_calendar", "Diocesan Calendar"),
+        ]:
+            if settings.get(key):
+                lines.append(f"{label}: {settings[key]}")
+        lines.append("=" * 60)
+    return lines
+
+
+def _format_holy_days(events: list) -> list:
+    """Format Holy Days of Obligation for display."""
+    lines = ["## Holy Days of Obligation"]
+    holy_days = [
+        e
+        for e in events
+        if e.get("holy_day_of_obligation", False) and not e.get("is_vigil_mass", False)
+    ]
+    for event in holy_days:
+        lines.append(_format_event(event))
+        lines.append("")
+    lines.append("=" * 60)
+    return lines
+
+
+def _format_liturgical_seasons(events: list) -> list:
+    """Format key liturgical season events for display."""
+    season_events = [
+        ("Advent1", "### Start of the Advent season"),
+        ("Christmas", "### Start of the Christmas season"),
+        ("Epiphany", None),
+        (
+            "BaptismOfTheLord",
+            "### End of the Christmas season and start of Ordinary Time",
+        ),
+        ("AshWednesday", "### Start of the Lent season"),
+        ("HolyThursday", "### Start of the Easter Triduum"),
+        ("Easter", "### Start of the Easter season"),
+        ("Pentecost", "### End of the Easter season and start of Ordinary Time"),
+        ("ChristKing", "### Last Sunday of Ordinary Time"),
+        ("OrdWeekday34Saturday", "### Last day of the liturgical year"),
+    ]
+
+    lines = ["## Start and end of liturgical seasons"]
+    for key, label in season_events:
+        event = next((e for e in events if e.get("event_key") == key), None)
+        if event:
+            if label:
+                lines.append(label)
+            lines.append(_format_event(event))
+            lines.append("")
+    lines.append("=" * 60)
+    return lines
+
+
+def _format_particular_celebrations(events: list) -> list:
+    """Format celebrations particular to the current calendar, for display."""
+    particular_events = [
+        e
+        for e in events
+        if re.match(r"^\[.*\]", e.get("name", "")) and not e.get("is_vigil_mass", False)
+    ]
+    if particular_events:
+        lines = ["## Celebrations particular to this calendar"]
+        for event in particular_events:
+            lines.append(_format_event(event))
+            lines.append("")
+        lines.append("=" * 60)
+        return lines
+    return []
+
+
+def _format_day_month(
+    event: dict, locale_code: str, p: inflect.engine
+) -> tuple[str, str]:
+    """Return formatted day and month based on locale."""
+    day = event.get("day")
+    month = event.get("month")
+    month_long = event.get("month_long")
+
+    if locale_code in ["fr", "it", "de", "pt"]:
+        return str(day), month_long
+    if locale_code in ["es", "en"]:
+        return p.number_to_words(p.ordinal(day)), month_long
+    # fallback: English words with calendar.month_name
+    return p.number_to_words(p.ordinal(day)), calendar.month_name[month]
+
+
+def format_suppressed_reinstated_events(data: dict) -> list:
+    """Format suppressed or reinstated celebrations for display."""
+    lines = []
+    metadata = data.get("metadata", {})
+    suppressed_events = metadata.get("suppressed_events", [])
+    reinstated_events = metadata.get("reinstated_events", [])
+
+    lines.append(
+        "## Celebrations that have been superseded by celebrations of greater rank"
+    )
+    if suppressed_events:
+        for event in suppressed_events:
+            superseding_event = next(
+                (e for e in data["litcal"] if e.get("date") == event.get("date")), None
+            )
+            if superseding_event:
+                lines.append(
+                    "- The liturgical event with key "
+                    + event.get("event_key")
+                    + " was suppressed on "
+                    + event.get("date")
+                    + " by the liturgical event:"
+                )
+                lines.append(_format_event(superseding_event))
+                lines.append("")
+    else:
+        lines.append("  (none)")
+
+    lines.append("=" * 60)
+
+    lines.append(
+        "## Celebrations that would have been suppressed or superseded but were finally reinstated"
+    )
+
+    if reinstated_events:
+        for event in reinstated_events:
+            reinstated_event = next(
+                (
+                    e
+                    for e in data["litcal"]
+                    if e.get("event_key") == event.get("event_key")
+                ),
+                None,
+            )
+            if reinstated_event:
+                lines.append(_format_event(reinstated_event))
+                lines.append("")
+    else:
+        lines.append("  (none)")
+
+    lines.append("=" * 60)
+
+    return lines
+
+
+def format_calendar_summary(data: dict) -> str:
+    """Format calendar data into a readable summary."""
+    if not data or "litcal" not in data:
+        return "No calendar data available"
+
+    liturgical_events = data["litcal"]
+    settings = data.get("settings", {})
+
+    lines = []
+    lines.extend(_format_header())
+    lines.extend(_format_holy_days(liturgical_events))
+    lines.extend(_format_liturgical_seasons(liturgical_events))
+    lines.extend(_format_particular_celebrations(liturgical_events))
+    # the LLM is sometimes confusing info from suppressed events with info from particular celebrations,
+    # so we might as well not show it at all until we find a better way
+    # lines.extend(_format_suppressed_reinstated_events(data))
+    # lines.append("=" * 60)
+    lines.append(f"Total events: {len(liturgical_events)}")
+    # the lectionary cycles are available for single events, but not to the calendar as a whole,
+    # so if we want to see this info, we can just calculate it
+    year_cycles = calculate_year_cycles(settings.get("year", datetime.now().year))
+    lines.append(f"Festive Lectionary cycle: YEAR {year_cycles['festive_year_cycle']}")
+    lines.append(f"Ferial Lectionary cycle: YEAR {year_cycles['ferial_year_cycle']}")
+    lines.extend(_format_settings(settings))
+
+    return "\n".join(lines)
+
+
+def format_liturgy_response(
+    celebrations: list, target_date: datetime, settings: dict
+) -> str:
+    """Format the liturgy of the day response."""
+    formatted_date = target_date.strftime("%A, %B %d, %Y")
+    lines = [
+        "=" * 60,
+        f"📖 LITURGY OF THE DAY - {formatted_date}",
+        "=" * 60,
+    ]
+
+    if settings:
+        lines.append(f"Locale: {settings.get('locale', 'N/A')}")
+        if settings.get("national_calendar"):
+            lines.append(f"National Calendar: {settings['national_calendar']}")
+        if settings.get("diocesan_calendar"):
+            lines.append(f"Diocesan Calendar: {settings['diocesan_calendar']}")
+        lines.append("")
+
+    for celebration in celebrations:
+        lines.append(_format_event(celebration))
+        if celebration.get("common"):
+            lines.append(f"   Common: {celebration.get('common_lcl')}")
+        if celebration.get("liturgical_year"):
+            lines.append(f"   Liturgical Year: {celebration['liturgical_year']}")
+        if celebration.get("readings"):
+            lines.append(f"   Readings: {json.dumps(celebration['readings'])}")
+        lines.append("")
+
+    lines.append("=" * 60)
+    return "✅ " + "\n".join(lines)
+
+
+def format_announcement_response(data: dict, year: int) -> str:
+    """Format the announcement response."""
+    settings = data.get("settings", {})
+    celebrations = data.get("litcal", [])
+    if not celebrations:
+        return "❌ No liturgical calendar data found in response"
+
+    p = inflect.engine()
+    base_locale = get_base_locale(settings.get("locale", "en"))
+
+    logging.info("Formatting announcement in locale: %s", base_locale)
+
+    # Set locale (try multiple candidates)
+    candidates = [
+        f"{base_locale}_{base_locale.upper()}.UTF-8",  # Unix
+        f"{locale.windows_locale.get(base_locale, '')}",  # Windows
+    ]
+    for loc in candidates:
+        try:
+            locale.setlocale(locale.LC_ALL, loc)
+            break
+        except locale.Error:
+            continue
+
+    # Extract events
+    keys = [
+        "AshWednesday",
+        "Easter",
+        "Ascension",
+        "Pentecost",
+        "CorpusChristi",
+        "Advent1",
+    ]
+    events = {key: get_event(celebrations, key) for key in keys}
+
+    if any(v is None for v in events.values()):
+        return "❌ No liturgical calendar data found in response"
+
+    # Format day/month for all events
+    formatted = {
+        key: _format_day_month(evt, base_locale, p) for key, evt in events.items()
+    }
+
+    lines = [
+        f"# Epiphany announcement of Easter and Moveable Feasts for the year {year}",
+    ]
+
+    announcement_template_lcl = load_announcement_template(base_locale)
+    lines.append(
+        announcement_template_lcl.format(
+            ash_wednesday_day=formatted["AshWednesday"][0],
+            ash_wednesday_month=formatted["AshWednesday"][1],
+            easter_day=formatted["Easter"][0],
+            easter_month=formatted["Easter"][1],
+            ascension_day=formatted["Ascension"][0],
+            ascension_month=formatted["Ascension"][1],
+            pentecost_day=formatted["Pentecost"][0],
+            pentecost_month=formatted["Pentecost"][1],
+            corpus_christi_day=formatted["CorpusChristi"][0],
+            corpus_christi_month=formatted["CorpusChristi"][1],
+            first_sunday_of_advent_day=formatted["Advent1"][0],
+            first_sunday_of_advent_month=formatted["Advent1"][1],
+        )
+    )
+
+    if settings:
+        lines.append("")
+        lines.append(f"*Locale: {settings.get('locale', 'N/A')}*  ")
+        if settings.get("national_calendar"):
+            lines.append(f"*National Calendar: {settings['national_calendar']}*  ")
+        if settings.get("diocesan_calendar"):
+            lines.append(f"*Diocesan Calendar: {settings['diocesan_calendar']}*  ")
+
+    return "\n".join(lines)
