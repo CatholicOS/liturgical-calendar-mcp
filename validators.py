@@ -40,36 +40,40 @@ def validate_target_date(date_str: str) -> datetime:
 
 async def validate_nation(nation: str) -> str:
     """Validate and normalize nation code."""
-    if not nation.strip():
+    normalized = nation.strip()
+    if not normalized:
         raise ValueError("Nation code is required")
 
     # Validate nation against cache
-    is_valid_national = await CalendarMetadataCache.is_valid_national(nation)
+    normalized_upper = normalized.upper()
+    is_valid_national = await CalendarMetadataCache.is_valid_national(normalized_upper)
     if not is_valid_national:
         available = await CalendarMetadataCache.get_national_calendars()
         raise ValueError(
-            f"❌ National calendar not found for: {nation}\n"
+            f"❌ National calendar not found for: {normalized_upper}\n"
             f"💡 Available nations: {', '.join(available)}"
         )
 
-    return nation.strip().upper()
+    return normalized_upper
 
 
 async def validate_diocese(diocese: str) -> str:
     """Validate and normalize diocese ID."""
-    if not diocese.strip():
+    normalized = diocese.strip()
+    if not normalized:
         raise ValueError("Diocese ID is required")
 
     # Validate diocese against cache
-    is_valid_diocesan = await CalendarMetadataCache.is_valid_diocesan(diocese)
+    normalized_lower = normalized.lower()
+    is_valid_diocesan = await CalendarMetadataCache.is_valid_diocesan(normalized_lower)
     if not is_valid_diocesan:
         available = await CalendarMetadataCache.get_diocesan_calendars()
         raise ValueError(
-            f"❌ Diocesan calendar not found for: {diocese}\n"
+            f"❌ Diocesan calendar not found for: {normalized_lower}\n"
             f"💡 Available dioceses: {', '.join(available)}"
         )
 
-    return diocese.strip().lower()
+    return normalized_lower
 
 
 def validate_year(year: int | None) -> int:
