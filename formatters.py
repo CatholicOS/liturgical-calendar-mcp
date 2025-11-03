@@ -363,4 +363,3 @@ def format_announcement_response(data: dict, year: int) -> str:
         return "\n".join(lines)
     finally:
         locale.setlocale(locale.LC_ALL, previous_locale)
-
