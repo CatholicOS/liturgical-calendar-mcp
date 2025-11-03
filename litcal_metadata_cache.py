@@ -23,6 +23,7 @@ logger = logging.getLogger("litcal-cache")
 
 
 class CalendarItem(TypedDict, total=False):
+    """Metadata for a liturgical Calendar item, whether a national or a diocesan calendar."""
     calendar_id: str
     locales: List[str]
 
