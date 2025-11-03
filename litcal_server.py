@@ -97,7 +97,7 @@ async def get_general_calendar(
             data = response.json()
 
             # Cache the response
-            calendar_cache.set(cache_key, data)
+            calendar_cache.update(cache_key, data)
 
             # Format and return response
             return format_calendar_summary(data)
@@ -188,7 +188,7 @@ async def get_national_calendar(
             data = response.json()
 
             # Cache the response
-            calendar_cache.set(cache_key, data)
+            calendar_cache.update(cache_key, data)
 
             # Format and return response
             return format_calendar_summary(data)
@@ -266,7 +266,7 @@ async def get_diocesan_calendar(
             data = response.json()
 
             # Cache the response
-            calendar_cache.set(cache_key, data)
+            calendar_cache.update(cache_key, data)
 
             # Format and return response
             return format_calendar_summary(data)
@@ -435,7 +435,7 @@ async def get_liturgy_of_the_day(
             data = response.json()
 
             # Cache the full calendar response
-            calendar_cache.set(cache_key, data)
+            calendar_cache.update(cache_key, data)
 
             # Filter celebrations for target date
             celebrations = filter_celebrations_by_date(data, target_date)
@@ -528,7 +528,7 @@ async def get_announcement_easter_and_moveable_feasts(
             data = response.json()
 
             # Cache the full calendar response
-            calendar_cache.set(cache_key, data)
+            calendar_cache.update(cache_key, data)
 
             # Format and return response
             return format_announcement_response(data, year_int)

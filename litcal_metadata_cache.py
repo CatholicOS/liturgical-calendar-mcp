@@ -85,7 +85,7 @@ class CalendarMetadataCache:
                 response = await client.get(url, timeout=DEFAULT_TIMEOUT)
                 response.raise_for_status()
                 data = response.json()
-                cls.set(data)
+                cls.update(data)
                 return True
         except httpx.HTTPStatusError as e:
             logger.error("HTTP error while requesting calendars metadata: %s", e)
@@ -107,7 +107,7 @@ class CalendarMetadataCache:
         )
 
     @classmethod
-    def set(cls, data: Dict) -> None:
+    def update(cls, data: Dict) -> None:
         """Store metadata and extract useful information."""
         cls._data = data
         cls._timestamp = datetime.now()

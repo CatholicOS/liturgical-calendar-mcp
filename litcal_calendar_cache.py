@@ -115,7 +115,7 @@ class CalendarDataCache:
             logger.error("Error reading cache file %s: %s", cache_file, e)
             return None
 
-    def set(self, key: CalendarCacheKey, data: Dict[str, Any]) -> None:
+    def update(self, key: CalendarCacheKey, data: Dict[str, Any]) -> None:
         """
         Store calendar data in the cache.
 
