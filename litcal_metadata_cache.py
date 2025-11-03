@@ -4,7 +4,7 @@ litcal_cache.py - Simple in-memory cache for liturgical calendar metadata.
 
 import sys
 import logging
-from typing import Optional, Dict, Set, List, TypedDict
+from typing import ClassVar, Optional, Dict, Set, List, TypedDict
 from datetime import datetime, timedelta
 import httpx
 
@@ -32,14 +32,14 @@ class CalendarItem(TypedDict, total=False):
 class CalendarMetadataCache:
     """Simple in-memory cache for calendar metadata."""
 
-    _data: Optional[Dict] = None
-    _timestamp: Optional[datetime] = None
-    _national_calendars: Set[str] = set()
-    _diocesan_calendars: Set[str] = set()
-    _general_locales: Set[str] = set()
-    _calendar_locales: Dict[str, Set[str]] = {}
-    _api_base_url: str = API_BASE_URL
-    _cache_expiry_hours: int = CACHE_EXPIRY_HOURS
+    _data: ClassVar[Optional[Dict]] = None
+    _timestamp: ClassVar[Optional[datetime]] = None
+    _national_calendars: ClassVar[Set[str]] = set()
+    _diocesan_calendars: ClassVar[Set[str]] = set()
+    _general_locales: ClassVar[Set[str]] = set()
+    _calendar_locales: ClassVar[Dict[str, Set[str]]] = {}
+    _api_base_url: ClassVar[str] = API_BASE_URL
+    _cache_expiry_hours: ClassVar[int] = CACHE_EXPIRY_HOURS
 
     def __new__(cls):
         raise RuntimeError("Use CalendarMetadataCache.init(), no instantiation needed.")
