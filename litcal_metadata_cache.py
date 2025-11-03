@@ -1,5 +1,5 @@
 """
-litcal_cache.py - Simple in-memory cache for liturgical calendar metadata.
+litcal_metadata_cache.py - Simple in-memory cache for liturgical calendar metadata.
 """
 
 import sys
