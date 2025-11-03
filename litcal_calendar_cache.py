@@ -34,6 +34,7 @@ class CalendarCacheKey:
         year: Calendar year
         locale: Locale code for the calendar content (default: "en")
     """
+
     calendar_type: str
     calendar_id: str
     year: int
@@ -129,12 +130,14 @@ class CalendarDataCache:
             with cache_file.open("w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
 
-            logger.info("Successfully cached calendar data for %s", key.to_cache_filename())
+            logger.info(
+                "Successfully cached calendar data for %s", key.to_cache_filename()
+            )
 
         except OSError as e:
             logger.error("Error writing to cache file %s: %s", cache_file, e)
 
-    def clear(self,  key: Optional[CalendarCacheKey] = None) -> None:
+    def clear(self, key: Optional[CalendarCacheKey] = None) -> None:
         """
         Clear cached data. If no parameters are provided, clears all cache.
 

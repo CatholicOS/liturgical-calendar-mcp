@@ -398,7 +398,9 @@ async def get_liturgy_of_the_day(
         )
 
         # Try to get calendar from cache first
-        cache_key = CalendarCacheKey(calendar_type, calendar_id, target_date.year, target_locale)
+        cache_key = CalendarCacheKey(
+            calendar_type, calendar_id, target_date.year, target_locale
+        )
         cached_data = calendar_cache.get(cache_key)
         if cached_data is not None:
             logger.info(
@@ -501,7 +503,9 @@ async def get_announcement_easter_and_moveable_feasts(
         )
 
         # Try to get calendar from cache first
-        cache_key = CalendarCacheKey(calendar_type, calendar_id, year_int, target_locale)
+        cache_key = CalendarCacheKey(
+            calendar_type, calendar_id, year_int, target_locale
+        )
         cached_data = calendar_cache.get(cache_key)
         if cached_data is not None:
             # Format and return response
