@@ -40,9 +40,7 @@ calendar_cache = CalendarDataCache()
 
 
 @mcp.tool()
-async def get_general_calendar(
-    year: int | None = None, locale: str = "en"
-) -> str:
+async def get_general_calendar(year: int | None = None, locale: str = "en") -> str:
     """
     Retrieve the General Roman Calendar for a specific year with optional locale.
 
@@ -52,15 +50,11 @@ async def get_general_calendar(
 
     Example: locale='fr', year='2023'
     """
-    logger.info(
-        "Fetching General Calendar for year %s (locale %s)", year, locale
-    )
+    logger.info("Fetching General Calendar for year %s (locale %s)", year, locale)
 
     try:
         year_int = validate_year(year)
-        locale = await CalendarMetadataCache.get_supported_locale(
-            "general", "", locale
-        )
+        locale = await CalendarMetadataCache.get_supported_locale("general", "", locale)
 
         # Try to get from cache first
         cache_key = CalendarCacheKey("general", "", year_int, locale)
@@ -493,9 +487,7 @@ async def get_announcement_easter_and_moveable_feasts(
         )
 
         # Try to get calendar from cache first
-        cache_key = CalendarCacheKey(
-            calendar_type, calendar_id, year_int, locale
-        )
+        cache_key = CalendarCacheKey(calendar_type, calendar_id, year_int, locale)
         cached_data = await calendar_cache.async_get(cache_key)
         if cached_data is not None:
             # Format and return response
