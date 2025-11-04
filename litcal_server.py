@@ -57,7 +57,7 @@ async def get_general_calendar(year: int | None = None, locale: str = "en") -> s
         locale = await CalendarMetadataCache.get_supported_locale("general", "", locale)
 
         # Try to get from cache first
-        cache_key = CalendarCacheKey("general", "", year_int, locale)
+        cache_key = CalendarCacheKey("general", "", year_int, locale, "CIVIL")
         cached_data = await calendar_cache.async_get(cache_key)
         if cached_data is not None:
             logger.info(
@@ -144,7 +144,7 @@ async def get_national_calendar(
             "national", nation_id, locale
         )
         # Try to get from cache first
-        cache_key = CalendarCacheKey("national", nation_id, year_int, locale)
+        cache_key = CalendarCacheKey("national", nation_id, year_int, locale, "CIVIL")
         cached_data = await calendar_cache.async_get(cache_key)
         if cached_data is not None:
             logger.info(
@@ -221,7 +221,7 @@ async def get_diocesan_calendar(
             "diocesan", diocese_id, locale
         )
         # Try to get from cache first
-        cache_key = CalendarCacheKey("diocesan", diocese_id, year_int, locale)
+        cache_key = CalendarCacheKey("diocesan", diocese_id, year_int, locale, "CIVIL")
         cached_data = await calendar_cache.async_get(cache_key)
         if cached_data is not None:
             logger.info(
@@ -383,7 +383,7 @@ async def get_liturgy_of_the_day(
 
         # Try to get calendar from cache first
         cache_key = CalendarCacheKey(
-            calendar_type, calendar_id, target_date.year, locale
+            calendar_type, calendar_id, target_date.year, locale, "LITURGICAL"
         )
         cached_data = await calendar_cache.async_get(cache_key)
         if cached_data is not None:
@@ -487,7 +487,9 @@ async def get_announcement_easter_and_moveable_feasts(
         )
 
         # Try to get calendar from cache first
-        cache_key = CalendarCacheKey(calendar_type, calendar_id, year_int, locale)
+        cache_key = CalendarCacheKey(
+            calendar_type, calendar_id, year_int, locale, "CIVIL"
+        )
         cached_data = await calendar_cache.async_get(cache_key)
         if cached_data is not None:
             # Format and return response

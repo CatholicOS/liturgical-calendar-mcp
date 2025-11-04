@@ -31,19 +31,27 @@ class CalendarCacheKey:
         calendar_id: Calendar identifier (nation code or diocese id, empty for general)
         year: Calendar year
         locale: Locale code for the calendar content (default: "en")
+        year_type: Type of year ("LITURGICAL" or "CIVIL", default: "LITURGICAL")
     """
 
     calendar_type: str
     calendar_id: str
     year: int
     locale: str = "en"
+    year_type: str = "LITURGICAL"
 
     def __post_init__(self):
-        """Validate the calendar type."""
+        """Validate the calendar type and year type."""
         if self.calendar_type not in VALID_CALENDAR_TYPES:
             raise ValueError(
                 f"Invalid calendar type: {self.calendar_type}. "
                 f"Must be one of {VALID_CALENDAR_TYPES}"
+            )
+
+        if self.year_type not in ("LITURGICAL", "CIVIL"):
+            raise ValueError(
+                f"Invalid year type: {self.year_type}. "
+                "Must be either 'LITURGICAL' or 'CIVIL'"
             )
 
     def to_cache_filename(self) -> str:
@@ -54,13 +62,14 @@ class CalendarCacheKey:
             A unique cache key string including all parameters
         """
         locale_part = self.locale.replace("-", "_")  # Normalize locale format
+        year_type_part = self.year_type.lower()
 
         if self.calendar_type == "general":
-            return f"general_{self.year}_{locale_part}"
+            return f"general_{self.year}_{year_type_part}_{locale_part}"
         if self.calendar_type == "national":
-            return f"national_{self.calendar_id.upper()}_{self.year}_{locale_part}"
+            return f"national_{self.calendar_id.upper()}_{self.year}_{year_type_part}_{locale_part}"
         # diocesan
-        return f"diocesan_{self.calendar_id.lower()}_{self.year}_{locale_part}"
+        return f"diocesan_{self.calendar_id.lower()}_{self.year}_{year_type_part}_{locale_part}"
 
 
 class CalendarDataCache:
