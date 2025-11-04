@@ -46,8 +46,7 @@ async def validate_nation(nation: str) -> str:
 
     # Validate nation against cache
     normalized_upper = normalized.upper()
-    is_valid_national = await CalendarMetadataCache.is_valid_national(normalized_upper)
-    if not is_valid_national:
+    if not await CalendarMetadataCache.is_valid_national(normalized_upper):
         available = await CalendarMetadataCache.get_national_calendars()
         raise ValueError(
             f"❌ National calendar not found for: {normalized_upper}\n"
