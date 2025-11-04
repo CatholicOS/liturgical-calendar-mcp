@@ -3,6 +3,7 @@ Utility functions for the MCP tools.
 """
 
 import locale
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from httpx import AsyncClient
@@ -11,11 +12,16 @@ from litcal_calendar_cache import CalendarDataCache
 from models import CalendarFetchRequest, CalendarCacheKey
 
 
-NOVERITIS_DIR = Path(__file__).parent / "noveritis"
 FESTIVE_CYCLE = ["A", "B", "C"]
 FERIAL_CYCLE = ["I", "II"]
+
+# === CONFIGURATION ===
+NOVERITIS_DIR = Path(__file__).parent / "noveritis"
 API_BASE_URL = "https://litcal.johnromanodorazio.com/api/dev"
 DEFAULT_TIMEOUT = 30
+
+# Create logger as a child of the main litcal logger
+logger = logging.getLogger("litcal.utils")
 
 
 def build_calendar_url(calendar_type: CalendarType, calendar_id: str, year: int) -> str:
@@ -112,6 +118,9 @@ async def fetch_calendar_data(
     )
     cached_data = await calendar_cache.async_get(cache_key)
     if cached_data is not None:
+        logger.info(
+            "Fetched calendar data from cache %s", cache_key.to_cache_filename()
+        )
         return cached_data
 
     # Make API request if not in cache
@@ -129,6 +138,7 @@ async def fetch_calendar_data(
     )
     response.raise_for_status()
     data = response.json()
+    logger.info("Fetched calendar data from API at URL %s", url)
 
     # Cache the response (off the event loop)
     await calendar_cache.async_update(cache_key, data)
