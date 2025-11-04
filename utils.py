@@ -90,12 +90,8 @@ async def fetch_calendar_data(
     Fetch calendar data either from cache or from API.
 
     Args:
-        calendar_type: Type of calendar (`CalendarType.GENERAL_ROMAN`, `CalendarType.NATIONAL`, or `CalendarType.DIOCESAN`)
-        calendar_id: Calendar identifier (empty for the general roman calendar; nation code or diocese id for others)
-        year: Target year
-        target_locale: Locale code for translations
-        year_type: `YearType.LITURGICAL` or `YearType.CIVIL` year type
-        calendar_cache: Instance of CalendarDataCache to use
+        request: `CalendarFetchRequest` containing parameters to fetch calendar data
+        calendar_cache: Instance of `CalendarDataCache` to use
 
     Returns:
         dict: Calendar data either from cache or freshly fetched from API
