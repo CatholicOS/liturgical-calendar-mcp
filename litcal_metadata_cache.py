@@ -6,7 +6,7 @@ import logging
 from typing import ClassVar, Optional, Dict, Set, List, TypedDict
 from datetime import datetime, timedelta
 import httpx
-from litcal_server import CalendarType
+from enums import CalendarType
 
 # === CONFIGURATION ===
 CACHE_EXPIRY_HOURS = 24

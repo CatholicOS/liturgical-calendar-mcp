@@ -14,7 +14,7 @@ The functions are:
 
 from datetime import datetime
 from litcal_metadata_cache import CalendarMetadataCache
-from litcal_server import CalendarType
+from enums import CalendarType
 
 
 def validate_calendar_type(calendar_type: str) -> CalendarType:
@@ -73,6 +73,15 @@ async def validate_diocese(diocese: str) -> str:
         )
 
     return normalized_lower
+
+
+async def validate_calendar_id(calendar_type: CalendarType, calendar_id: str) -> str:
+    """Validate calendar ID based on calendar type."""
+    if calendar_type == CalendarType.NATIONAL:
+        return await validate_nation(calendar_id)
+    if calendar_type == CalendarType.DIOCESAN:
+        return await validate_diocese(calendar_id)
+    return calendar_id
 
 
 def validate_year(year: int | None) -> int:

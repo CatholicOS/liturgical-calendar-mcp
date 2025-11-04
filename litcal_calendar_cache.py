@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 import asyncio
 from pathlib import Path
 from typing import Optional, Dict, Any
-from litcal_server import CalendarType, YearType
+from enums import CalendarType, YearType
 
 # Create logger as a child of the main litcal logger
 logger = logging.getLogger("litcal.cache")
@@ -44,13 +44,13 @@ class CalendarCacheKey:
         """Validate the calendar type and year type."""
         if self.calendar_type not in CalendarType:
             raise ValueError(
-                f"Invalid calendar type: {self.calendar_type}. "
+                f"Invalid calendar type: {self.calendar_type.value}. "
                 f"Must be one of {', '.join(repr(ct.value) for ct in CalendarType)}"
             )
 
         if self.year_type not in YearType:
             raise ValueError(
-                f"Invalid year type: {self.year_type}. "
+                f"Invalid year type: {self.year_type.value}. "
                 f"Must be one of {', '.join(repr(ct.value) for ct in YearType)}"
             )
 

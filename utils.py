@@ -5,7 +5,7 @@ Utility functions for the MCP tools.
 import locale
 from datetime import datetime, timezone
 from pathlib import Path
-from litcal_server import CalendarType
+from enums import CalendarType
 
 
 NOVERITIS_DIR = Path(__file__).parent / "noveritis"

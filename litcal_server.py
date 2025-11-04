@@ -5,12 +5,12 @@ Liturgical Calendar MCP Server - Provides access to Roman Catholic liturgical ca
 
 import sys
 import logging
-from enum import Enum
 import httpx
 from mcp.server.fastmcp import FastMCP
 import pycountry
 from litcal_metadata_cache import CalendarMetadataCache
 from litcal_calendar_cache import CalendarCacheKey, CalendarDataCache
+from enums import YearType, CalendarType
 from formatters import (
     format_calendar_summary,
     format_liturgy_response,
@@ -22,6 +22,7 @@ from validators import (
     validate_target_date,
     validate_nation,
     validate_diocese,
+    validate_calendar_id,
 )
 from utils import build_calendar_url, filter_celebrations_by_date
 
@@ -32,24 +33,6 @@ mcp = FastMCP(name="litcal")
 
 # === CONFIGURATION ===
 DEFAULT_TIMEOUT = 30
-
-# === ENUMS ===
-
-
-class YearType(Enum):
-    """Represents the `year_type` parameter for the Liturgical Calendar API."""
-
-    LITURGICAL = "LITURGICAL"
-    CIVIL = "CIVIL"
-
-
-class CalendarType(Enum):
-    """Represents the types of calendars that can be requested from the Liturgical Calendar API."""
-
-    GENERAL_ROMAN = "general"
-    NATIONAL = "national"
-    DIOCESAN = "diocesan"
-
 
 # Initialize caches
 calendar_cache = CalendarDataCache()
@@ -364,7 +347,7 @@ async def list_available_calendars() -> str:
 @mcp.tool()
 async def get_liturgy_of_the_day(
     date: str = "",
-    calendar_type: str = CalendarType.GENERAL_ROMAN,
+    calendar_type: str = CalendarType.GENERAL_ROMAN.value,
     calendar_id: str = "",
     locale: str = "en",
 ) -> str:
@@ -396,14 +379,7 @@ async def get_liturgy_of_the_day(
         # Validate and normalize inputs
         calendar_type_case = validate_calendar_type(calendar_type)
         target_date = validate_target_date(date)
-
-        # Validate calendar ID if needed
-        if calendar_type_case == CalendarType.NATIONAL:
-            calendar_id = await validate_nation(calendar_id)
-        elif calendar_type_case == CalendarType.DIOCESAN:
-            calendar_id = await validate_diocese(calendar_id)
-
-        # Get locale and try cache first
+        calendar_id = await validate_calendar_id(calendar_type_case, calendar_id)
         locale = await CalendarMetadataCache.get_supported_locale(
             calendar_type_case, calendar_id, locale
         )
@@ -412,19 +388,19 @@ async def get_liturgy_of_the_day(
         cache_key = CalendarCacheKey(
             calendar_type_case, calendar_id, target_date.year, locale, YearType.CIVIL
         )
-        cached_data = await calendar_cache.async_get(cache_key)
-        if cached_data is not None:
+        data = await calendar_cache.async_get(cache_key)
+        if data is not None:
             logger.info(
                 "Using cached calendar data for date %s, calendar %s_%s (locale: %s)",
                 target_date.date(),
                 calendar_type_case.value,
-                calendar_id or CalendarType.GENERAL_ROMAN,
+                calendar_id or CalendarType.GENERAL_ROMAN.value,
                 locale,
             )
-            celebrations = filter_celebrations_by_date(cached_data, target_date)
+            celebrations = filter_celebrations_by_date(data, target_date)
             if celebrations:
                 return format_liturgy_response(
-                    celebrations, target_date, cached_data.get("settings", {})
+                    celebrations, target_date, data.get("settings", {})
                 )
 
         # Make API request if not in cache or no celebrations found
