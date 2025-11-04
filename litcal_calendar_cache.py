@@ -20,9 +20,6 @@ CACHE_DIR = (
 )  # Will be created in the same directory as the script
 
 
-# CalendarCacheKey moved to `models.py` to centralize dataclass definitions.
-
-
 class CalendarDataCache:
     """File-based cache for liturgical calendar data."""
 

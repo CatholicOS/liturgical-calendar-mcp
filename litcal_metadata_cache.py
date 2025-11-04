@@ -65,6 +65,19 @@ class CalendarMetadataCache:
         return await cls._fetch_metadata()
 
     @classmethod
+    def set_http_client(cls, http_client: httpx.AsyncClient | None) -> None:
+        """
+        Synchronously set or inject an httpx.AsyncClient to be used by the
+        metadata cache. This allows callers to provide a shared client at
+        module import time without awaiting the async `init` method.
+
+        Note: If the cache has already initialized an http client, attempting
+        to change it will log a warning and will not replace the existing
+        client.
+        """
+        cls._initialize_http_client(http_client)
+
+    @classmethod
     def _initialize_http_client(cls, http_client: httpx.AsyncClient | None) -> None:
         """Initialize or validate the HTTP client."""
         if cls._http_client is None:

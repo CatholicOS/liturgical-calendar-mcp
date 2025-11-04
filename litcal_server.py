@@ -37,7 +37,7 @@ mcp = FastMCP(name="litcal")
 http_client = httpx.AsyncClient(http2=True)
 
 # Initialize caches
-CalendarMetadataCache.init(http_client)
+CalendarMetadataCache.set_http_client(http_client)
 calendar_cache = CalendarDataCache()
 
 # === MCP TOOLS ===
@@ -329,9 +329,6 @@ async def get_liturgy_of_the_day(
 
         # Filter celebrations for target date
         celebrations = filter_celebrations_by_date(data, target_date)
-
-        if celebrations is None:
-            return "❌ No liturgical calendar data found in response"
 
         if not celebrations:
             formatted_date = target_date.strftime("%B %d, %Y")
