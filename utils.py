@@ -5,7 +5,7 @@ Utility functions for the MCP tools.
 import locale
 from datetime import datetime, timezone
 from pathlib import Path
-import httpx
+from httpx import AsyncClient
 from enums import CalendarType
 from litcal_calendar_cache import CalendarDataCache
 from models import CalendarFetchRequest, CalendarCacheKey
@@ -85,13 +85,15 @@ def calculate_year_cycles(year: int) -> dict:
 async def fetch_calendar_data(
     request: CalendarFetchRequest,
     calendar_cache: CalendarDataCache,
+    http_client: AsyncClient,
 ) -> dict:
     """
     Fetch calendar data either from cache or from API.
 
     Args:
         request: `CalendarFetchRequest` containing parameters to fetch calendar data
-        calendar_cache: Instance of `CalendarDataCache` to use
+        calendar_cache: Instance of `CalendarDataCache`
+        http_client: Instance of `httpx.AsyncClient`
 
     Returns:
         dict: Calendar data either from cache or freshly fetched from API
@@ -119,17 +121,16 @@ async def fetch_calendar_data(
         "Accept-Language": request.target_locale,
     }
 
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            url,
-            headers=headers,
-            params={"year_type": request.year_type.value},
-            timeout=DEFAULT_TIMEOUT,
-        )
-        response.raise_for_status()
-        data = response.json()
+    response = await http_client.get(
+        url,
+        params={"year_type": request.year_type.value},
+        headers=headers,
+        timeout=DEFAULT_TIMEOUT,
+    )
+    response.raise_for_status()
+    data = response.json()
 
-        # Cache the response (off the event loop)
-        await calendar_cache.async_update(cache_key, data)
+    # Cache the response (off the event loop)
+    await calendar_cache.async_update(cache_key, data)
 
-        return data
+    return data

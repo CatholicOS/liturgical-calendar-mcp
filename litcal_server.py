@@ -27,14 +27,18 @@ from validators import (
 from utils import filter_celebrations_by_date, fetch_calendar_data
 from models import CalendarFetchRequest
 
+# Create logger as a child of the main litcal logger
 logger = logging.getLogger("litcal.server")
 
 # Initialize MCP server
 mcp = FastMCP(name="litcal")
 
-# Initialize caches
-calendar_cache = CalendarDataCache()
+# Initialize httpx client
+http_client = httpx.AsyncClient(http2=True)
 
+# Initialize caches
+CalendarMetadataCache.init(http_client)
+calendar_cache = CalendarDataCache()
 
 # === MCP TOOLS ===
 
@@ -66,7 +70,7 @@ async def get_general_calendar(year: int | None = None, locale: str = "en") -> s
             target_locale=locale,
             year_type=YearType.LITURGICAL,
         )
-        data = await fetch_calendar_data(request, calendar_cache=calendar_cache)
+        data = await fetch_calendar_data(request, calendar_cache, http_client)
 
         # Format and return response
         return format_calendar_summary(data)
@@ -133,7 +137,7 @@ async def get_national_calendar(
             target_locale=locale,
             year_type=YearType.LITURGICAL,
         )
-        data = await fetch_calendar_data(request, calendar_cache=calendar_cache)
+        data = await fetch_calendar_data(request, calendar_cache, http_client)
 
         # Format and return response
         return format_calendar_summary(data)
@@ -189,7 +193,7 @@ async def get_diocesan_calendar(
             target_locale=locale,
             year_type=YearType.LITURGICAL,
         )
-        data = await fetch_calendar_data(request, calendar_cache=calendar_cache)
+        data = await fetch_calendar_data(request, calendar_cache, http_client)
 
         # Format and return response
         return format_calendar_summary(data)
@@ -321,7 +325,7 @@ async def get_liturgy_of_the_day(
             target_locale=locale,
             year_type=YearType.CIVIL,
         )
-        data = await fetch_calendar_data(request, calendar_cache=calendar_cache)
+        data = await fetch_calendar_data(request, calendar_cache, http_client)
 
         # Filter celebrations for target date
         celebrations = filter_celebrations_by_date(data, target_date)
@@ -387,7 +391,7 @@ async def get_announcement_easter_and_moveable_feasts(
             target_locale=locale,
             year_type=YearType.CIVIL,
         )
-        data = await fetch_calendar_data(request, calendar_cache=calendar_cache)
+        data = await fetch_calendar_data(request, calendar_cache, http_client)
 
         # Format and return response
         return format_announcement_response(data, year_int)

@@ -27,6 +27,7 @@ class CalendarItem(TypedDict, total=False):
 class CalendarMetadataCache:
     """Simple in-memory cache for calendar metadata."""
 
+    _http_client: ClassVar[Optional[httpx.AsyncClient]] = None
     _data: ClassVar[Optional[Dict]] = None
     _timestamp: ClassVar[Optional[datetime]] = None
     _national_calendars: ClassVar[Set[str]] = set()
@@ -44,46 +45,82 @@ class CalendarMetadataCache:
     @classmethod
     async def init(
         cls,
+        http_client: httpx.AsyncClient | None = None,
         api_base_url: str = API_BASE_URL,
         cache_expiry_hours: int = CACHE_EXPIRY_HOURS,
     ) -> bool:
-        """Ensure metadata cache is loaded and fresh."""
-        # Only set/update if cache is not initialized OR if not expired
-        if cls._data is None:
-            if api_base_url != API_BASE_URL:
-                logger.info("Setting custom API base URL: %s", api_base_url)
-            cls._api_base_url = api_base_url
-
-            if cache_expiry_hours != CACHE_EXPIRY_HOURS:
-                logger.info("Setting custom cache expiry hours: %s", cache_expiry_hours)
-            cls._cache_expiry_hours = cache_expiry_hours
-        else:
-            # Warn if attempting to change settings after initialization (ensure idempotency)
-            if api_base_url != cls._api_base_url:
-                logger.warning(
-                    "Attempting to change API URL from %s to %s after cache initialization",
-                    cls._api_base_url,
-                    api_base_url,
-                )
-            if cache_expiry_hours != cls._cache_expiry_hours:
-                logger.warning(
-                    "Attempting to change cache expiry hours from %d to %d after cache initialization",
-                    cls._cache_expiry_hours,
-                    cache_expiry_hours,
-                )
+        """
+        Ensure metadata cache is loaded and fresh.
+        Args:
+            http_client: Optional httpx.AsyncClient instance to use for requests
+            api_base_url: URL to use for API requests
+            cache_expiry_hours: Number of hours until cache expiry
+        """
+        cls._initialize_http_client(http_client)
+        cls._configure_settings(api_base_url, cache_expiry_hours)
 
         if not cls.is_expired():
             return True
 
+        return await cls._fetch_metadata()
+
+    @classmethod
+    def _initialize_http_client(cls, http_client: httpx.AsyncClient | None) -> None:
+        """Initialize or validate the HTTP client."""
+        if cls._http_client is None:
+            if http_client is None:
+                logger.info("Instantiating http client seeing that none was provided")
+                http_client = httpx.AsyncClient(http2=True)
+            cls._http_client = http_client
+        elif http_client is not None:
+            logger.warning("Attempting to change http client after initialization")
+
+    @classmethod
+    def _configure_settings(cls, api_base_url: str, cache_expiry_hours: int) -> None:
+        """Configure or validate API settings."""
+        if cls._data is None:
+            cls._set_initial_settings(api_base_url, cache_expiry_hours)
+        else:
+            cls._validate_settings(api_base_url, cache_expiry_hours)
+
+    @classmethod
+    def _set_initial_settings(cls, api_base_url: str, cache_expiry_hours: int) -> None:
+        """Set initial configuration values."""
+        if api_base_url != API_BASE_URL:
+            logger.info("Setting custom API base URL: %s", api_base_url)
+        cls._api_base_url = api_base_url
+
+        if cache_expiry_hours != CACHE_EXPIRY_HOURS:
+            logger.info("Setting custom cache expiry hours: %s", cache_expiry_hours)
+        cls._cache_expiry_hours = cache_expiry_hours
+
+    @classmethod
+    def _validate_settings(cls, api_base_url: str, cache_expiry_hours: int) -> None:
+        """Warn if settings are being changed after initialization."""
+        if api_base_url != cls._api_base_url:
+            logger.warning(
+                "Attempting to change API URL from %s to %s after initialization",
+                cls._api_base_url,
+                api_base_url,
+            )
+        if cache_expiry_hours != cls._cache_expiry_hours:
+            logger.warning(
+                "Attempting to change cache expiry hours from %d to %d after initialization",
+                cls._cache_expiry_hours,
+                cache_expiry_hours,
+            )
+
+    @classmethod
+    async def _fetch_metadata(cls) -> bool:
+        """Fetch and cache metadata from the API."""
         logger.info("Cache expired or empty, fetching metadata...")
         try:
             url = f"{cls._api_base_url}/calendars"
-            async with httpx.AsyncClient() as client:
-                response = await client.get(url, timeout=DEFAULT_TIMEOUT)
-                response.raise_for_status()
-                data = response.json()
-                cls.update(data)
-                return True
+            response = await cls._http_client.get(url, timeout=DEFAULT_TIMEOUT)
+            response.raise_for_status()
+            data = response.json()
+            cls.update(data)
+            return True
         except httpx.HTTPStatusError:
             logger.exception("HTTP error while requesting calendars metadata")
             return False
