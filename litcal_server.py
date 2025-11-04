@@ -57,7 +57,7 @@ async def get_general_calendar(year: int | None = None, locale: str = "en") -> s
         locale = await CalendarMetadataCache.get_supported_locale("general", "", locale)
 
         # Try to get from cache first
-        cache_key = CalendarCacheKey("general", "", year_int, locale, "CIVIL")
+        cache_key = CalendarCacheKey("general", "", year_int, locale, "LITURGICAL")
         cached_data = await calendar_cache.async_get(cache_key)
         if cached_data is not None:
             logger.info(
@@ -78,7 +78,7 @@ async def get_general_calendar(year: int | None = None, locale: str = "en") -> s
             response = await client.get(
                 url,
                 headers=headers,
-                params={"year_type": "CIVIL"},
+                params={"year_type": "LITURGICAL"},
                 timeout=DEFAULT_TIMEOUT,
             )
             response.raise_for_status()
@@ -144,7 +144,9 @@ async def get_national_calendar(
             "national", nation_id, locale
         )
         # Try to get from cache first
-        cache_key = CalendarCacheKey("national", nation_id, year_int, locale, "CIVIL")
+        cache_key = CalendarCacheKey(
+            "national", nation_id, year_int, locale, "LITURGICAL"
+        )
         cached_data = await calendar_cache.async_get(cache_key)
         if cached_data is not None:
             logger.info(
@@ -166,7 +168,7 @@ async def get_national_calendar(
             response = await client.get(
                 url,
                 headers=headers,
-                params={"year_type": "CIVIL"},
+                params={"year_type": "LITURGICAL"},
                 timeout=DEFAULT_TIMEOUT,
             )
             response.raise_for_status()
@@ -221,7 +223,9 @@ async def get_diocesan_calendar(
             "diocesan", diocese_id, locale
         )
         # Try to get from cache first
-        cache_key = CalendarCacheKey("diocesan", diocese_id, year_int, locale, "CIVIL")
+        cache_key = CalendarCacheKey(
+            "diocesan", diocese_id, year_int, locale, "LITURGICAL"
+        )
         cached_data = await calendar_cache.async_get(cache_key)
         if cached_data is not None:
             logger.info(
@@ -243,7 +247,7 @@ async def get_diocesan_calendar(
             response = await client.get(
                 url,
                 headers=headers,
-                params={"year_type": "CIVIL"},
+                params={"year_type": "LITURGICAL"},
                 timeout=DEFAULT_TIMEOUT,
             )
             response.raise_for_status()
@@ -383,7 +387,7 @@ async def get_liturgy_of_the_day(
 
         # Try to get calendar from cache first
         cache_key = CalendarCacheKey(
-            calendar_type, calendar_id, target_date.year, locale, "LITURGICAL"
+            calendar_type, calendar_id, target_date.year, locale, "CIVIL"
         )
         cached_data = await calendar_cache.async_get(cache_key)
         if cached_data is not None:
