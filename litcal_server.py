@@ -38,12 +38,14 @@ DEFAULT_TIMEOUT = 30
 
 class YearType(Enum):
     """Represents the `year_type` parameter for the Liturgical Calendar API."""
+
     LITURGICAL = "LITURGICAL"
     CIVIL = "CIVIL"
 
 
 class CalendarType(Enum):
     """Represents the types of calendars that can be requested from the Liturgical Calendar API."""
+
     GENERAL_ROMAN = "general"
     NATIONAL = "national"
     DIOCESAN = "diocesan"
@@ -71,10 +73,14 @@ async def get_general_calendar(year: int | None = None, locale: str = "en") -> s
 
     try:
         year_int = validate_year(year)
-        locale = await CalendarMetadataCache.get_supported_locale(CalendarType.GENERAL_ROMAN, "", locale)
+        locale = await CalendarMetadataCache.get_supported_locale(
+            CalendarType.GENERAL_ROMAN, "", locale
+        )
 
         # Try to get from cache first
-        cache_key = CalendarCacheKey(CalendarType.GENERAL_ROMAN, "", year_int, locale, YearType.LITURGICAL)
+        cache_key = CalendarCacheKey(
+            CalendarType.GENERAL_ROMAN, "", year_int, locale, YearType.LITURGICAL
+        )
         cached_data = await calendar_cache.async_get(cache_key)
         if cached_data is not None:
             logger.info(
