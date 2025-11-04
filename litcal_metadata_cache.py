@@ -36,7 +36,9 @@ class CalendarMetadataCache:
     _cache_expiry_hours: ClassVar[int] = CACHE_EXPIRY_HOURS
 
     def __new__(cls):
-        raise RuntimeError("Use CalendarMetadataCache.init() async class method (await it); this class uses only class methods and should not be instantiated.")
+        raise RuntimeError(
+            "Use CalendarMetadataCache.init() async class method (await it); this class uses only class methods and should not be instantiated."
+        )
 
     @classmethod
     async def init(
