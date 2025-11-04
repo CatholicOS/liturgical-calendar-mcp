@@ -64,8 +64,7 @@ async def validate_diocese(diocese: str) -> str:
 
     # Validate diocese against cache
     normalized_lower = normalized.lower()
-    is_valid_diocesan = await CalendarMetadataCache.is_valid_diocesan(normalized_lower)
-    if not is_valid_diocesan:
+    if not await CalendarMetadataCache.is_valid_diocesan(normalized_lower):
         available = await CalendarMetadataCache.get_diocesan_calendars()
         raise ValueError(
             f"❌ Diocesan calendar not found for: {normalized_lower}\n"
