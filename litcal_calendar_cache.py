@@ -18,6 +18,7 @@ CACHE_EXPIRY_HOURS = 24 * 7  # Cache for 1 week
 CACHE_DIR = (
     Path(__file__).resolve().parent / "cache"
 )  # Will be created in the same directory as the script
+VALID_CALENDAR_TYPES = ("general", "national", "diocesan")
 
 
 @dataclass(frozen=True)
@@ -39,11 +40,10 @@ class CalendarCacheKey:
 
     def __post_init__(self):
         """Validate the calendar type."""
-        valid_types = ("general", "national", "diocesan")
-        if self.calendar_type not in valid_types:
+        if self.calendar_type not in VALID_CALENDAR_TYPES:
             raise ValueError(
                 f"Invalid calendar type: {self.calendar_type}. "
-                f"Must be one of {valid_types}"
+                f"Must be one of {VALID_CALENDAR_TYPES}"
             )
 
     def to_cache_filename(self) -> str:
