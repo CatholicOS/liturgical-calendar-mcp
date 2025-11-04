@@ -263,8 +263,7 @@ def format_liturgy_response(
 
 def format_announcement_response(data: dict, year: int) -> str:
     """Format the announcement response."""
-    settings: dict
-    settings = data.get("settings", {})
+    settings: dict = data.get("settings", {})
     celebrations = data.get("litcal", [])
     if not celebrations:
         return "❌ No liturgical calendar data found in response"
