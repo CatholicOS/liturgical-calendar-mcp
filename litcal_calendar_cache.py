@@ -76,7 +76,10 @@ class CalendarDataCache:
         try:
             self._cache_dir.mkdir(exist_ok=True)
         except PermissionError:
-            logger.exception("Permission denied: Unable to create cache directory at %s", self._cache_dir)
+            logger.exception(
+                "Permission denied: Unable to create cache directory at %s",
+                self._cache_dir,
+            )
             raise  # Re-raise to let callers handle the error
 
     def _get_cache_file(self, key: CalendarCacheKey) -> Path:
