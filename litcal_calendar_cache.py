@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 import asyncio
 from pathlib import Path
 from typing import Optional, Dict, Any
+from litcal_server import CalendarType, YearType
 
 # Create logger as a child of the main litcal logger
 logger = logging.getLogger("litcal.cache")
@@ -18,7 +19,6 @@ CACHE_EXPIRY_HOURS = 24 * 7  # Cache for 1 week
 CACHE_DIR = (
     Path(__file__).resolve().parent / "cache"
 )  # Will be created in the same directory as the script
-VALID_CALENDAR_TYPES = ("general", "national", "diocesan")
 
 
 @dataclass(frozen=True)
@@ -27,31 +27,31 @@ class CalendarCacheKey:
     Immutable key for identifying cached calendar data.
 
     Attributes:
-        calendar_type: Type of calendar ("general", "national", or "diocesan")
+        calendar_type: Type of calendar (`CalendarType.GENERAL_ROMAN`, `CalendarType.NATIONAL`, or `CalendarType.DIOCESAN`)
         calendar_id: Calendar identifier (nation code or diocese id, empty for general)
         year: Calendar year
         locale: Locale code for the calendar content (default: "en")
-        year_type: Type of year ("LITURGICAL" or "CIVIL", default: "LITURGICAL")
+        year_type: Type of year (`YearType.LITURGICAL` or `YearType.CIVIL`, default: `YearType.LITURGICAL`)
     """
 
-    calendar_type: str
+    calendar_type: CalendarType
     calendar_id: str
     year: int
     locale: str = "en"
-    year_type: str = "LITURGICAL"
+    year_type: YearType = YearType.LITURGICAL
 
     def __post_init__(self):
         """Validate the calendar type and year type."""
-        if self.calendar_type not in VALID_CALENDAR_TYPES:
+        if self.calendar_type not in CalendarType:
             raise ValueError(
                 f"Invalid calendar type: {self.calendar_type}. "
-                f"Must be one of {VALID_CALENDAR_TYPES}"
+                f"Must be one of {', '.join(repr(ct.value) for ct in CalendarType)}"
             )
 
-        if self.year_type not in ("LITURGICAL", "CIVIL"):
+        if self.year_type not in YearType:
             raise ValueError(
                 f"Invalid year type: {self.year_type}. "
-                "Must be either 'LITURGICAL' or 'CIVIL'"
+                f"Must be one of {', '.join(repr(ct.value) for ct in YearType)}"
             )
 
     def to_cache_filename(self) -> str:
@@ -62,11 +62,11 @@ class CalendarCacheKey:
             A unique cache key string including all parameters
         """
         locale_part = self.locale.replace("-", "_")  # Normalize locale format
-        year_type_part = self.year_type.lower()
+        year_type_part = self.year_type.value.lower()
 
-        if self.calendar_type == "general":
+        if self.calendar_type == CalendarType.GENERAL_ROMAN:
             return f"general_{self.year}_{year_type_part}_{locale_part}"
-        if self.calendar_type == "national":
+        if self.calendar_type == CalendarType.NATIONAL:
             return f"national_{self.calendar_id.upper()}_{self.year}_{year_type_part}_{locale_part}"
         # diocesan
         return f"diocesan_{self.calendar_id.lower()}_{self.year}_{year_type_part}_{locale_part}"

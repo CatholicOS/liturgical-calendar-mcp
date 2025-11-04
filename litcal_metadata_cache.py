@@ -6,6 +6,7 @@ import logging
 from typing import ClassVar, Optional, Dict, Set, List, TypedDict
 from datetime import datetime, timedelta
 import httpx
+from litcal_server import CalendarType
 
 # === CONFIGURATION ===
 CACHE_EXPIRY_HOURS = 24
@@ -166,7 +167,7 @@ class CalendarMetadataCache:
 
     @classmethod
     async def get_supported_locale(
-        cls, calendar_type: str, calendar_id: str, requested_locale: str
+        cls, calendar_type: CalendarType, calendar_id: str, requested_locale: str
     ) -> str:
         """
         Get the best matching locale for a calendar.
@@ -176,10 +177,10 @@ class CalendarMetadataCache:
             await cls.init()
 
         # Get available locales
-        if calendar_type == "general":
+        if calendar_type == CalendarType.GENERAL_ROMAN:
             available_locales = cls._general_locales
         else:
-            key = f"{calendar_type}_{calendar_id}"
+            key = f"{calendar_type.value}_{calendar_id}"
             available_locales = cls._calendar_locales.get(key, set())
 
         # Check exact match

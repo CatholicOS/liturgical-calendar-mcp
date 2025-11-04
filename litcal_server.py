@@ -5,6 +5,7 @@ Liturgical Calendar MCP Server - Provides access to Roman Catholic liturgical ca
 
 import sys
 import logging
+from enum import Enum
 import httpx
 from mcp.server.fastmcp import FastMCP
 import pycountry
@@ -29,8 +30,24 @@ logger = logging.getLogger("litcal.server")
 # Initialize MCP server
 mcp = FastMCP(name="litcal")
 
-# Configuration
+# === CONFIGURATION ===
 DEFAULT_TIMEOUT = 30
+
+# === ENUMS ===
+
+
+class YearType(Enum):
+    """Represents the `year_type` parameter for the Liturgical Calendar API."""
+    LITURGICAL = "LITURGICAL"
+    CIVIL = "CIVIL"
+
+
+class CalendarType(Enum):
+    """Represents the types of calendars that can be requested from the Liturgical Calendar API."""
+    GENERAL_ROMAN = "general"
+    NATIONAL = "national"
+    DIOCESAN = "diocesan"
+
 
 # Initialize caches
 calendar_cache = CalendarDataCache()
@@ -54,10 +71,10 @@ async def get_general_calendar(year: int | None = None, locale: str = "en") -> s
 
     try:
         year_int = validate_year(year)
-        locale = await CalendarMetadataCache.get_supported_locale("general", "", locale)
+        locale = await CalendarMetadataCache.get_supported_locale(CalendarType.GENERAL_ROMAN, "", locale)
 
         # Try to get from cache first
-        cache_key = CalendarCacheKey("general", "", year_int, locale, "LITURGICAL")
+        cache_key = CalendarCacheKey(CalendarType.GENERAL_ROMAN, "", year_int, locale, YearType.LITURGICAL)
         cached_data = await calendar_cache.async_get(cache_key)
         if cached_data is not None:
             logger.info(
@@ -68,7 +85,7 @@ async def get_general_calendar(year: int | None = None, locale: str = "en") -> s
             return format_calendar_summary(cached_data)
 
         # Make API request if not in cache
-        url = build_calendar_url("general", "", year_int)
+        url = build_calendar_url(CalendarType.GENERAL_ROMAN, "", year_int)
         headers = {
             "Accept": "application/json",
             "Accept-Language": locale,
@@ -78,7 +95,7 @@ async def get_general_calendar(year: int | None = None, locale: str = "en") -> s
             response = await client.get(
                 url,
                 headers=headers,
-                params={"year_type": "LITURGICAL"},
+                params={"year_type": YearType.LITURGICAL.value},
                 timeout=DEFAULT_TIMEOUT,
             )
             response.raise_for_status()
@@ -141,11 +158,11 @@ async def get_national_calendar(
         year_int = validate_year(year)
         nation_id = await validate_nation(nation)
         locale = await CalendarMetadataCache.get_supported_locale(
-            "national", nation_id, locale
+            CalendarType.NATIONAL, nation_id, locale
         )
         # Try to get from cache first
         cache_key = CalendarCacheKey(
-            "national", nation_id, year_int, locale, "LITURGICAL"
+            CalendarType.NATIONAL, nation_id, year_int, locale, YearType.LITURGICAL
         )
         cached_data = await calendar_cache.async_get(cache_key)
         if cached_data is not None:
@@ -158,7 +175,7 @@ async def get_national_calendar(
             return format_calendar_summary(cached_data)
 
         # Make API request if not in cache
-        url = build_calendar_url("national", nation_id, year_int)
+        url = build_calendar_url(CalendarType.NATIONAL, nation_id, year_int)
         headers = {
             "Accept": "application/json",
             "Accept-Language": locale,
@@ -168,7 +185,7 @@ async def get_national_calendar(
             response = await client.get(
                 url,
                 headers=headers,
-                params={"year_type": "LITURGICAL"},
+                params={"year_type": YearType.LITURGICAL.value},
                 timeout=DEFAULT_TIMEOUT,
             )
             response.raise_for_status()
@@ -220,11 +237,11 @@ async def get_diocesan_calendar(
         year_int = validate_year(year)
         diocese_id = await validate_diocese(diocese)
         locale = await CalendarMetadataCache.get_supported_locale(
-            "diocesan", diocese_id, locale
+            CalendarType.DIOCESAN, diocese_id, locale
         )
         # Try to get from cache first
         cache_key = CalendarCacheKey(
-            "diocesan", diocese_id, year_int, locale, "LITURGICAL"
+            CalendarType.DIOCESAN, diocese_id, year_int, locale, YearType.LITURGICAL
         )
         cached_data = await calendar_cache.async_get(cache_key)
         if cached_data is not None:
@@ -237,7 +254,7 @@ async def get_diocesan_calendar(
             return format_calendar_summary(cached_data)
 
         # Make API request if not in cache
-        url = build_calendar_url("diocesan", diocese_id, year_int)
+        url = build_calendar_url(CalendarType.DIOCESAN, diocese_id, year_int)
         headers = {
             "Accept": "application/json",
             "Accept-Language": locale,
@@ -247,7 +264,7 @@ async def get_diocesan_calendar(
             response = await client.get(
                 url,
                 headers=headers,
-                params={"year_type": "LITURGICAL"},
+                params={"year_type": YearType.LITURGICAL.value},
                 timeout=DEFAULT_TIMEOUT,
             )
             response.raise_for_status()
@@ -341,7 +358,7 @@ async def list_available_calendars() -> str:
 @mcp.tool()
 async def get_liturgy_of_the_day(
     date: str = "",
-    calendar_type: str = "general",
+    calendar_type: str = CalendarType.GENERAL_ROMAN,
     calendar_id: str = "",
     locale: str = "en",
 ) -> str:
@@ -371,31 +388,31 @@ async def get_liturgy_of_the_day(
 
     try:
         # Validate and normalize inputs
-        calendar_type = validate_calendar_type(calendar_type)
+        calendar_type_case = validate_calendar_type(calendar_type)
         target_date = validate_target_date(date)
 
         # Validate calendar ID if needed
-        if calendar_type == "national":
+        if calendar_type_case == CalendarType.NATIONAL:
             calendar_id = await validate_nation(calendar_id)
-        elif calendar_type == "diocesan":
+        elif calendar_type_case == CalendarType.DIOCESAN:
             calendar_id = await validate_diocese(calendar_id)
 
         # Get locale and try cache first
         locale = await CalendarMetadataCache.get_supported_locale(
-            calendar_type, calendar_id, locale
+            calendar_type_case, calendar_id, locale
         )
 
         # Try to get calendar from cache first
         cache_key = CalendarCacheKey(
-            calendar_type, calendar_id, target_date.year, locale, "CIVIL"
+            calendar_type_case, calendar_id, target_date.year, locale, YearType.CIVIL
         )
         cached_data = await calendar_cache.async_get(cache_key)
         if cached_data is not None:
             logger.info(
                 "Using cached calendar data for date %s, calendar %s_%s (locale: %s)",
                 target_date.date(),
-                calendar_type,
-                calendar_id or "general",
+                calendar_type_case.value,
+                calendar_id or CalendarType.GENERAL_ROMAN,
                 locale,
             )
             celebrations = filter_celebrations_by_date(cached_data, target_date)
@@ -405,7 +422,7 @@ async def get_liturgy_of_the_day(
                 )
 
         # Make API request if not in cache or no celebrations found
-        url = build_calendar_url(calendar_type, calendar_id, target_date.year)
+        url = build_calendar_url(calendar_type_case, calendar_id, target_date.year)
         logger.info("Using calendar URL: %s", url)
         headers = {
             "Accept": "application/json",
@@ -416,7 +433,7 @@ async def get_liturgy_of_the_day(
             response = await client.get(
                 url,
                 headers=headers,
-                params={"year_type": "CIVIL"},
+                params={"year_type": YearType.CIVIL.value},
                 timeout=DEFAULT_TIMEOUT,
             )
             response.raise_for_status()
@@ -453,7 +470,7 @@ async def get_liturgy_of_the_day(
 
 @mcp.tool()
 async def get_announcement_easter_and_moveable_feasts(
-    calendar_type: str = "general",
+    calendar_type: str = CalendarType.GENERAL_ROMAN.value,
     calendar_id: str = "",
     locale: str = "en",
     year: int | None = None,
@@ -475,24 +492,24 @@ async def get_announcement_easter_and_moveable_feasts(
     try:
         # Validate and normalize inputs
         year_int = validate_year(year)
-        calendar_type = validate_calendar_type(calendar_type)
+        calendar_type_case = validate_calendar_type(calendar_type)
 
         # Validate calendar ID if needed
-        if calendar_type == "national":
+        if calendar_type_case == CalendarType.NATIONAL:
             calendar_id = await validate_nation(calendar_id)
-        elif calendar_type == "diocesan":
+        elif calendar_type_case == CalendarType.DIOCESAN:
             calendar_id = await validate_diocese(calendar_id)
 
         # Build URL and get locale
-        url = build_calendar_url(calendar_type, calendar_id, year_int)
+        url = build_calendar_url(calendar_type_case, calendar_id, year_int)
         logger.info("Using calendar URL: %s", url)
         locale = await CalendarMetadataCache.get_supported_locale(
-            calendar_type, calendar_id, locale
+            calendar_type_case, calendar_id, locale
         )
 
         # Try to get calendar from cache first
         cache_key = CalendarCacheKey(
-            calendar_type, calendar_id, year_int, locale, "CIVIL"
+            calendar_type_case, calendar_id, year_int, locale, YearType.CIVIL
         )
         cached_data = await calendar_cache.async_get(cache_key)
         if cached_data is not None:
@@ -509,7 +526,7 @@ async def get_announcement_easter_and_moveable_feasts(
             response = await client.get(
                 url,
                 headers=headers,
-                params={"year_type": "CIVIL"},
+                params={"year_type": YearType.CIVIL.value},
                 timeout=DEFAULT_TIMEOUT,
             )
             response.raise_for_status()

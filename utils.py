@@ -5,6 +5,7 @@ Utility functions for the MCP tools.
 import locale
 from datetime import datetime, timezone
 from pathlib import Path
+from litcal_server import CalendarType
 
 
 NOVERITIS_DIR = Path(__file__).parent / "noveritis"
@@ -14,12 +15,12 @@ API_BASE_URL = "https://litcal.johnromanodorazio.com/api/dev"
 DEFAULT_TIMEOUT = 30
 
 
-def build_calendar_url(calendar_type: str, calendar_id: str, year: int) -> str:
+def build_calendar_url(calendar_type: CalendarType, calendar_id: str, year: int) -> str:
     """Build the appropriate API URL based on calendar type."""
-    if calendar_type == "general":
+    if calendar_type == CalendarType.GENERAL_ROMAN:
         return f"{API_BASE_URL}/calendar/{year}"
 
-    if calendar_type == "national":
+    if calendar_type == CalendarType.NATIONAL:
         return f"{API_BASE_URL}/calendar/nation/{calendar_id}/{year}"
 
     # Diocesan calendar
