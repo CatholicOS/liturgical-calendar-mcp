@@ -227,6 +227,125 @@ def format_calendar_summary(data: dict) -> str:
     return "\n".join(lines)
 
 
+def _format_reading_field(value: str | None, label: str) -> str:
+    """Format a single reading field with N/A for missing values."""
+    return f"   {label}: {value if value else 'N/A'}"
+
+
+def _format_standard_readings(data: dict, indent: str = "   ") -> list:
+    """Format a standard readings block (ferial or festive)."""
+    block = []
+    if "palm_gospel" in data:
+        block.append(
+            _format_reading_field(data.get("palm_gospel"), f"{indent}Palm Gospel")
+        )
+    if "first_reading" in data:
+        block.append(
+            _format_reading_field(data.get("first_reading"), f"{indent}First Reading")
+        )
+    if "responsorial_psalm" in data:
+        block.append(
+            _format_reading_field(
+                data.get("responsorial_psalm"), f"{indent}Responsorial Psalm"
+            )
+        )
+    if "second_reading" in data:
+        block.append(
+            _format_reading_field(data.get("second_reading"), f"{indent}Second Reading")
+        )
+    if "gospel_acclamation" in data:
+        block.append(
+            _format_reading_field(
+                data.get("gospel_acclamation"), f"{indent}Gospel Acclamation"
+            )
+        )
+    if "gospel" in data:
+        block.append(_format_reading_field(data.get("gospel"), f"{indent}Gospel"))
+    return block
+
+
+def _format_easter_vigil_readings(readings: dict) -> list:
+    """Format Easter Vigil readings (seven readings with epistle)."""
+    lines = ["   Readings (Easter Vigil):"]
+    ordinal_numbers = [
+        "first",
+        "second",
+        "third",
+        "fourth",
+        "fifth",
+        "sixth",
+        "seventh",
+    ]
+    for i in range(1, 8):
+        reading = readings.get(f"{ordinal_numbers[i-1]}_reading")
+        psalm = readings.get(f"responsorial_psalm_{i}")
+        lines.append(f"      Reading {i}: {reading if reading else 'N/A'}")
+        lines.append(f"      Responsorial Psalm {i}: {psalm if psalm else 'N/A'}")
+    lines.append(_format_reading_field(readings.get("epistle"), "      Epistle"))
+    lines.append(
+        _format_reading_field(
+            readings.get("responsorial_psalm_epistle"),
+            "      Responsorial Psalm (Epistle)",
+        )
+    )
+    lines.append(
+        _format_reading_field(
+            readings.get("gospel_acclamation"), "      Gospel Acclamation"
+        )
+    )
+    lines.append(_format_reading_field(readings.get("gospel"), "      Gospel"))
+    return lines
+
+
+def _format_christmas_readings(readings: dict) -> list:
+    """Format Christmas readings (night, dawn, day masses)."""
+    lines = ["   Readings (Christmas):"]
+    for mass_time in ["night", "dawn", "day"]:
+        mass_data = readings.get(mass_time, {})
+        if mass_data:
+            lines.append(f"      {mass_time.title()} Mass:")
+            lines.extend(_format_standard_readings(mass_data, "         "))
+    return lines
+
+
+def _format_easter_sunday_readings(readings: dict) -> list:
+    """Format Easter Sunday readings (day and evening)."""
+    lines = ["   Readings (Easter Sunday):", "      Day:"]
+    lines.extend(_format_standard_readings(readings.get("day", {}), "         "))
+    lines.append("      Evening:")
+    lines.extend(_format_standard_readings(readings.get("evening", {}), "         "))
+    return lines
+
+
+def _format_multiple_schema_readings(readings: dict) -> list:
+    """Format multiple schema readings (All Souls Day options)."""
+    lines = ["   Readings (Multiple Options):"]
+    for schema_name in ["schema_one", "schema_two", "schema_three"]:
+        schema_data = readings.get(schema_name)
+        if schema_data:
+            lines.append(f"      {schema_name.replace('_', ' ').title()}:")
+            lines.extend(_format_standard_readings(schema_data, "         "))
+    return lines
+
+
+def _format_seasonal_readings(readings: dict) -> list:
+    """Format seasonal readings (easter_season/outside_easter_season)."""
+    lines = ["   Readings (Seasonal):"]
+    if "easter_season" in readings:
+        lines.append("      Easter Season:")
+        lines.extend(
+            _format_standard_readings(readings.get("easter_season", {}), "         ")
+        )
+    if "outside_easter_season" in readings:
+        lines.append("      Outside Easter Season:")
+        lines.extend(
+            _format_standard_readings(
+                readings.get("outside_easter_season", {}), "         "
+            )
+        )
+    return lines
+
+
 def _format_readings(readings: dict | str) -> list:
     """Format readings data into human-readable text.
 
@@ -244,129 +363,30 @@ def _format_readings(readings: dict | str) -> list:
     if not readings:
         return ["   Readings: N/A"]
 
-    # Handle string readings (commons reference)
     if isinstance(readings, str):
         return [f"   Readings: {readings}"]
 
-    lines = []
-
-    # Helper to format a single reading field
-    def format_field(value: str | None, label: str) -> str:
-        return f"   {label}: {value if value else 'N/A'}"
-
-    # Helper to format a standard readings block
-    def format_standard_readings(data: dict, indent: str = "   ") -> list:
-        block = []
-        if "palm_gospel" in data:
-            block.append(format_field(data.get("palm_gospel"), f"{indent}Palm Gospel"))
-        if "first_reading" in data:
-            block.append(
-                format_field(data.get("first_reading"), f"{indent}First Reading")
-            )
-        if "responsorial_psalm" in data:
-            block.append(
-                format_field(
-                    data.get("responsorial_psalm"), f"{indent}Responsorial Psalm"
-                )
-            )
-        if "second_reading" in data:
-            block.append(
-                format_field(data.get("second_reading"), f"{indent}Second Reading")
-            )
-        if "gospel_acclamation" in data:
-            block.append(
-                format_field(
-                    data.get("gospel_acclamation"), f"{indent}Gospel Acclamation"
-                )
-            )
-        if "gospel" in data:
-            block.append(format_field(data.get("gospel"), f"{indent}Gospel"))
-        return block
-
-    # Check for specialized structures first
-
-    # Easter Vigil (seven readings)
+    # Check for specialized structures
     if "first_reading" in readings and "seventh_reading" in readings:
-        lines.append("   Readings (Easter Vigil):")
-        ORDINAL_NUMBERS = [
-            "first",
-            "second",
-            "third",
-            "fourth",
-            "fifth",
-            "sixth",
-            "seventh",
-        ]
-        for i in range(1, 8):
-            reading = readings.get(f"{ORDINAL_NUMBERS[i-1]}_reading")
-            psalm = readings.get(f"responsorial_psalm_{i}")
-            lines.append(f"      Reading {i}: {reading if reading else 'N/A'}")
-            lines.append(f"      Responsorial Psalm {i}: {psalm if psalm else 'N/A'}")
-        lines.append(format_field(readings.get("epistle"), "      Epistle"))
-        lines.append(
-            format_field(
-                readings.get("responsorial_psalm_epistle"),
-                "      Responsorial Psalm (Epistle)",
-            )
-        )
-        lines.append(
-            format_field(readings.get("gospel_acclamation"), "      Gospel Acclamation")
-        )
-        lines.append(format_field(readings.get("gospel"), "      Gospel"))
-        return lines
+        return _format_easter_vigil_readings(readings)
 
-    # Christmas (night, dawn, day)
     if any(mass_time in readings for mass_time in ["night", "dawn", "day"]):
-        lines.append("   Readings (Christmas):")
-        for mass_time in ["night", "dawn", "day"]:
-            mass_data = readings.get(mass_time, {})
-            if mass_data:
-                lines.append(f"      {mass_time.title()} Mass:")
-                lines.extend(format_standard_readings(mass_data, "         "))
-        return lines
+        return _format_christmas_readings(readings)
 
-    # Easter Sunday (day and evening)
     if "day" in readings and "evening" in readings:
-        lines.append("   Readings (Easter Sunday):")
-        lines.append("      Day:")
-        lines.extend(format_standard_readings(readings.get("day", {}), "         "))
-        lines.append("      Evening:")
-        lines.extend(format_standard_readings(readings.get("evening", {}), "         "))
-        return lines
+        return _format_easter_sunday_readings(readings)
 
-    # All Souls Day (multiple schemas)
     if any(
         schema in readings for schema in ["schema_one", "schema_two", "schema_three"]
     ):
-        lines.append("   Readings (Multiple Options):")
-        for schema_name in ["schema_one", "schema_two", "schema_three"]:
-            schema_data = readings.get(schema_name)
-            if schema_data:
-                lines.append(f"      {schema_name.replace('_', ' ').title()}:")
-                lines.extend(format_standard_readings(schema_data, "         "))
-        return lines
+        return _format_multiple_schema_readings(readings)
 
-    # Seasonal (easter_season/outside_easter_season)
     if "easter_season" in readings or "outside_easter_season" in readings:
-        lines.append("   Readings (Seasonal):")
-        if "easter_season" in readings:
-            lines.append("      Easter Season:")
-            lines.extend(
-                format_standard_readings(readings.get("easter_season", {}), "         ")
-            )
-        if "outside_easter_season" in readings:
-            lines.append("      Outside Easter Season:")
-            lines.extend(
-                format_standard_readings(
-                    readings.get("outside_easter_season", {}), "         "
-                )
-            )
-        return lines
+        return _format_seasonal_readings(readings)
 
     # Standard readings (ferial or festive)
-    lines.append("   Readings:")
-    lines.extend(format_standard_readings(readings, "      "))
-
+    lines = ["   Readings:"]
+    lines.extend(_format_standard_readings(readings, "      "))
     return lines
 
 
