@@ -7,7 +7,6 @@ from datetime import datetime, timezone
 
 from settings import (
     API_BASE_URL,
-    DEFAULT_TIMEOUT,
     FESTIVE_CYCLE,
     FERIAL_CYCLE,
     NOVERITIS_DIR,
