@@ -10,21 +10,24 @@ async def test_national_calendar(nation: str, year: int = 2024):
     """Test particular celebrations detection for a national calendar."""
     print(f"\n{'='*60}")
     print(f"Testing {nation} National Calendar for {year}")
-    print('='*60)
+    print("=" * 60)
 
     # Get the national calendar
     result = await mcp.call_tool(
-        "get_national_calendar",
-        {"nation": nation, "year": year, "locale": "en"}
+        "get_national_calendar", {"nation": nation, "year": year, "locale": "en"}
     )
 
     # Extract and print the result
-    if hasattr(result, 'content') and len(result.content) > 0:
-        text_content = result.content[0].text if hasattr(result.content[0], 'text') else str(result.content[0])
+    if hasattr(result, "content") and len(result.content) > 0:
+        text_content = (
+            result.content[0].text
+            if hasattr(result.content[0], "text")
+            else str(result.content[0])
+        )
 
         # Find the "Celebrations particular to this calendar" section
         if "## Celebrations particular to this calendar" in text_content:
-            lines = text_content.split('\n')
+            lines = text_content.split("\n")
             in_particular_section = False
             particular_celebrations = []
 
