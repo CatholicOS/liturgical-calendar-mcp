@@ -2,7 +2,6 @@
 """Test script to verify particular celebrations are correctly identified."""
 
 import asyncio
-import sys
 from litcal_server import mcp
 
 

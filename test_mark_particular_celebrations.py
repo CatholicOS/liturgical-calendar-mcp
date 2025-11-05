@@ -72,19 +72,19 @@ def test_mark_particular_celebrations():
 
     # Verify USA results
     assert (
-        result_usa["litcal"][0]["is_particular"] == False
+        result_usa["litcal"][0]["is_particular"] is False
     ), "Easter should not be particular"
     assert (
-        result_usa["litcal"][1]["is_particular"] == False
+        result_usa["litcal"][1]["is_particular"] is False
     ), "Christmas should not be particular"
     assert (
-        result_usa["litcal"][2]["is_particular"] == True
+        result_usa["litcal"][2]["is_particular"] is True
     ), "Immaculate Conception USA should be particular"
     assert (
-        result_usa["litcal"][3]["is_particular"] == True
+        result_usa["litcal"][3]["is_particular"] is True
     ), "St Patrick USA should be particular"
     assert (
-        result_usa["litcal"][4]["is_particular"] == True
+        result_usa["litcal"][4]["is_particular"] is True
     ), "Our Lady of Guadalupe should be particular"
 
     print("\n✅ USA calendar: All assertions passed!")
@@ -102,16 +102,16 @@ def test_mark_particular_celebrations():
 
     # Verify Italy results
     assert (
-        result_italy["litcal"][0]["is_particular"] == False
+        result_italy["litcal"][0]["is_particular"] is False
     ), "Easter should not be particular"
     assert (
-        result_italy["litcal"][1]["is_particular"] == False
+        result_italy["litcal"][1]["is_particular"] is False
     ), "All Saints should not be particular"
     assert (
-        result_italy["litcal"][2]["is_particular"] == True
+        result_italy["litcal"][2]["is_particular"] is True
     ), "St Francis should be particular"
     assert (
-        result_italy["litcal"][3]["is_particular"] == True
+        result_italy["litcal"][3]["is_particular"] is True
     ), "St Catherine should be particular"
 
     print("\n✅ Italy calendar: All assertions passed!")
