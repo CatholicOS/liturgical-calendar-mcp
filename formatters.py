@@ -288,16 +288,20 @@ def _format_readings(readings: dict | str) -> list:
     # Easter Vigil (seven readings)
     if "first_reading" in readings and "seventh_reading" in readings:
         lines.append("   Readings (Easter Vigil):")
-        ORDINAL_NUMBERS = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh']
+        ORDINAL_NUMBERS = [
+            "first",
+            "second",
+            "third",
+            "fourth",
+            "fifth",
+            "sixth",
+            "seventh",
+        ]
         for i in range(1, 8):
-            reading = readings.get(
-                f"{ORDINAL_NUMBERS[i-1]}_reading"
-            )
+            reading = readings.get(f"{ORDINAL_NUMBERS[i-1]}_reading")
             psalm = readings.get(f"responsorial_psalm_{i}")
             lines.append(f"      Reading {i}: {reading if reading else 'N/A'}")
-            lines.append(
-                f"      Responsorial Psalm {i}: {psalm if psalm else 'N/A'}"
-            )
+            lines.append(f"      Responsorial Psalm {i}: {psalm if psalm else 'N/A'}")
         lines.append(format_field(readings.get("epistle"), "      Epistle"))
         lines.append(
             format_field(
@@ -331,10 +335,8 @@ def _format_readings(readings: dict | str) -> list:
         return lines
 
     # All Souls Day (multiple schemas)
-    if (
-        "schema_one" in readings
-        or "schema_two" in readings
-        or "schema_three" in readings
+    if any(
+        schema in readings for schema in ["schema_one", "schema_two", "schema_three"]
     ):
         lines.append("   Readings (Multiple Options):")
         for schema_name in ["schema_one", "schema_two", "schema_three"]:
