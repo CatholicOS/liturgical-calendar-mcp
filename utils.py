@@ -81,6 +81,7 @@ def calculate_year_cycles(year: int) -> dict:
     }
 
 
+
 async def fetch_calendar_data(
     request: CalendarFetchRequest,
     calendar_cache: CalendarDataCache,
@@ -137,3 +138,44 @@ async def fetch_calendar_data(
     await calendar_cache.async_update(cache_key, data)
 
     return data
+
+
+def mark_particular_celebrations(
+    calendar_data: dict, general_calendar_data: dict
+) -> dict:
+    """
+    Mark celebrations that are particular to a specific calendar by comparing
+    with the General Roman Calendar.
+
+    This function identifies celebrations that are unique to a national or diocesan
+    calendar by comparing event_keys with the General Roman Calendar. Events that
+    don't exist in the general calendar (or vigil masses of such events) are marked
+    as particular celebrations.
+
+    Args:
+        calendar_data: The national or diocesan calendar data
+        general_calendar_data: The General Roman Calendar data for the same year
+
+    Returns:
+        The calendar_data with an 'is_particular' field added to each event
+    """
+    # Build a set of event_keys from the general calendar for fast lookup
+    general_event_keys = {
+        event.get("event_key")
+        for event in general_calendar_data.get("litcal", [])
+        if event.get("event_key")
+    }
+
+    # Mark each event in the particular calendar
+    for event in calendar_data.get("litcal", []):
+        event_key = event.get("event_key", "")
+
+        # An event is particular if its event_key is not in the general calendar
+        # We exclude the vigil mass check here because vigil masses of particular
+        # celebrations should also be marked as particular
+        is_particular = event_key not in general_event_keys
+
+        # Add the marker field
+        event["is_particular"] = is_particular
+
+    return calendar_data
