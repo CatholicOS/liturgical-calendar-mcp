@@ -312,7 +312,7 @@ def _format_readings(readings: dict | str) -> list:
         return lines
 
     # Christmas (night, dawn, day)
-    if "night" in readings and "dawn" in readings and "day" in readings:
+    if any(mass_time in readings for mass_time in ["night", "dawn", "day"]):
         lines.append("   Readings (Christmas):")
         for mass_time in ["night", "dawn", "day"]:
             mass_data = readings.get(mass_time, {})
