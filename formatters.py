@@ -288,9 +288,10 @@ def _format_readings(readings: dict | str) -> list:
     # Easter Vigil (seven readings)
     if "first_reading" in readings and "seventh_reading" in readings:
         lines.append("   Readings (Easter Vigil):")
+        ORDINAL_NUMBERS = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh']
         for i in range(1, 8):
             reading = readings.get(
-                f"{'first second third fourth fifth sixth seventh'.split()[i-1]}_reading"
+                f"{ORDINAL_NUMBERS[i-1]}_reading"
             )
             psalm = readings.get(f"responsorial_psalm_{i}")
             if reading or psalm:
