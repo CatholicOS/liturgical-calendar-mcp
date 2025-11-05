@@ -370,12 +370,11 @@ def _format_readings(readings: dict | str) -> list:
     if "first_reading" in readings and "seventh_reading" in readings:
         return _format_easter_vigil_readings(readings)
 
-    if any(mass_time in readings for mass_time in ["night", "dawn", "day"]):
-        return _format_christmas_readings(readings)
-
     if "day" in readings and "evening" in readings:
         return _format_easter_sunday_readings(readings)
 
+    if all(mass_time in readings for mass_time in ["night", "dawn", "day"]):
+        return _format_christmas_readings(readings)
     if any(
         schema in readings for schema in ["schema_one", "schema_two", "schema_three"]
     ):
