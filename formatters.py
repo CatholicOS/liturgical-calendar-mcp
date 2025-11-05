@@ -26,7 +26,6 @@ from datetime import datetime
 import logging
 import locale
 import calendar
-import json
 import inflect
 from utils import (
     calculate_year_cycles,
@@ -228,6 +227,147 @@ def format_calendar_summary(data: dict) -> str:
     return "\n".join(lines)
 
 
+def _format_readings(readings: dict | str) -> list:
+    """Format readings data into human-readable text.
+
+    Handles multiple reading structures from the Liturgical Calendar API:
+    - ReadingsFerial (weekday)
+    - ReadingsFestive (feast days with second reading)
+    - ReadingsPalmSunday (includes palm_gospel)
+    - ReadingsEasterVigil (seven readings with epistle)
+    - ReadingsChristmas (night, dawn, day masses)
+    - ReadingsWithEvening (day and evening)
+    - ReadingsMultipleSchemas (multiple schema options)
+    - ReadingsCommons (string reference to commons)
+    - ReadingsSeasonal (easter_season/outside_easter_season)
+    """
+    if not readings:
+        return ["   Readings: N/A"]
+
+    # Handle string readings (commons reference)
+    if isinstance(readings, str):
+        return [f"   Readings: {readings}"]
+
+    lines = []
+
+    # Helper to format a single reading field
+    def format_field(value: str | None, label: str) -> str:
+        return f"   {label}: {value if value else 'N/A'}"
+
+    # Helper to format a standard readings block
+    def format_standard_readings(data: dict, indent: str = "   ") -> list:
+        block = []
+        if "palm_gospel" in data:
+            block.append(format_field(data.get("palm_gospel"), f"{indent}Palm Gospel"))
+        if "first_reading" in data:
+            block.append(
+                format_field(data.get("first_reading"), f"{indent}First Reading")
+            )
+        if "responsorial_psalm" in data:
+            block.append(
+                format_field(
+                    data.get("responsorial_psalm"), f"{indent}Responsorial Psalm"
+                )
+            )
+        if "second_reading" in data:
+            block.append(
+                format_field(data.get("second_reading"), f"{indent}Second Reading")
+            )
+        if "gospel_acclamation" in data:
+            block.append(
+                format_field(
+                    data.get("gospel_acclamation"), f"{indent}Gospel Acclamation"
+                )
+            )
+        if "gospel" in data:
+            block.append(format_field(data.get("gospel"), f"{indent}Gospel"))
+        return block
+
+    # Check for specialized structures first
+
+    # Easter Vigil (seven readings)
+    if "first_reading" in readings and "seventh_reading" in readings:
+        lines.append("   Readings (Easter Vigil):")
+        for i in range(1, 8):
+            reading = readings.get(
+                f"{'first second third fourth fifth sixth seventh'.split()[i-1]}_reading"
+            )
+            psalm = readings.get(f"responsorial_psalm_{i}")
+            if reading or psalm:
+                lines.append(f"      Reading {i}: {reading if reading else 'N/A'}")
+                lines.append(
+                    f"      Responsorial Psalm {i}: {psalm if psalm else 'N/A'}"
+                )
+        lines.append(format_field(readings.get("epistle"), "      Epistle"))
+        lines.append(
+            format_field(
+                readings.get("responsorial_psalm_epistle"),
+                "      Responsorial Psalm (Epistle)",
+            )
+        )
+        lines.append(
+            format_field(readings.get("gospel_acclamation"), "      Gospel Acclamation")
+        )
+        lines.append(format_field(readings.get("gospel"), "      Gospel"))
+        return lines
+
+    # Christmas (night, dawn, day)
+    if "night" in readings and "dawn" in readings and "day" in readings:
+        lines.append("   Readings (Christmas):")
+        for mass_time in ["night", "dawn", "day"]:
+            mass_data = readings.get(mass_time, {})
+            if mass_data:
+                lines.append(f"      {mass_time.title()} Mass:")
+                lines.extend(format_standard_readings(mass_data, "         "))
+        return lines
+
+    # Easter Sunday (day and evening)
+    if "day" in readings and "evening" in readings:
+        lines.append("   Readings (Easter Sunday):")
+        lines.append("      Day:")
+        lines.extend(format_standard_readings(readings.get("day", {}), "         "))
+        lines.append("      Evening:")
+        lines.extend(format_standard_readings(readings.get("evening", {}), "         "))
+        return lines
+
+    # All Souls Day (multiple schemas)
+    if (
+        "schema_one" in readings
+        or "schema_two" in readings
+        or "schema_three" in readings
+    ):
+        lines.append("   Readings (Multiple Options):")
+        for schema_name in ["schema_one", "schema_two", "schema_three"]:
+            schema_data = readings.get(schema_name)
+            if schema_data:
+                lines.append(f"      {schema_name.replace('_', ' ').title()}:")
+                lines.extend(format_standard_readings(schema_data, "         "))
+        return lines
+
+    # Seasonal (easter_season/outside_easter_season)
+    if "easter_season" in readings or "outside_easter_season" in readings:
+        lines.append("   Readings (Seasonal):")
+        if "easter_season" in readings:
+            lines.append("      Easter Season:")
+            lines.extend(
+                format_standard_readings(readings.get("easter_season", {}), "         ")
+            )
+        if "outside_easter_season" in readings:
+            lines.append("      Outside Easter Season:")
+            lines.extend(
+                format_standard_readings(
+                    readings.get("outside_easter_season", {}), "         "
+                )
+            )
+        return lines
+
+    # Standard readings (ferial or festive)
+    lines.append("   Readings:")
+    lines.extend(format_standard_readings(readings, "      "))
+
+    return lines
+
+
 def format_liturgy_response(
     celebrations: list, target_date: datetime, settings: dict
 ) -> str:
@@ -254,7 +394,7 @@ def format_liturgy_response(
         if celebration.get("liturgical_year"):
             lines.append(f"   Liturgical Year: {celebration['liturgical_year']}")
         if celebration.get("readings"):
-            lines.append(f"   Readings: {json.dumps(celebration['readings'])}")
+            lines.extend(_format_readings(celebration["readings"]))
         lines.append("")
 
     lines.append("=" * 60)
