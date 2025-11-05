@@ -4,14 +4,14 @@ Utility functions for the MCP tools.
 
 import locale
 from datetime import datetime, timezone
-from pathlib import Path
 
-
-NOVERITIS_DIR = Path(__file__).parent / "noveritis"
-FESTIVE_CYCLE = ["A", "B", "C"]
-FERIAL_CYCLE = ["I", "II"]
-API_BASE_URL = "https://litcal.johnromanodorazio.com/api/dev"
-DEFAULT_TIMEOUT = 30
+from settings import (
+    API_BASE_URL,
+    DEFAULT_TIMEOUT,
+    FESTIVE_CYCLE,
+    FERIAL_CYCLE,
+    NOVERITIS_DIR,
+)
 
 
 def build_calendar_url(calendar_type: str, calendar_id: str, year: int) -> str:

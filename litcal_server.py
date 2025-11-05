@@ -23,14 +23,12 @@ from validators import (
     validate_diocese,
 )
 from utils import build_calendar_url, filter_celebrations_by_date
+from settings import DEFAULT_TIMEOUT, DEFAULT_YEAR_TYPE
 
 logger = logging.getLogger("litcal.server")
 
 # Initialize MCP server
 mcp = FastMCP(name="litcal")
-
-# Configuration
-DEFAULT_TIMEOUT = 30
 
 # Initialize caches
 calendar_cache = CalendarDataCache()
@@ -78,7 +76,7 @@ async def get_general_calendar(year: int | None = None, locale: str = "en") -> s
             response = await client.get(
                 url,
                 headers=headers,
-                params={"year_type": "CIVIL"},
+                params={"year_type": DEFAULT_YEAR_TYPE},
                 timeout=DEFAULT_TIMEOUT,
             )
             response.raise_for_status()
@@ -166,7 +164,7 @@ async def get_national_calendar(
             response = await client.get(
                 url,
                 headers=headers,
-                params={"year_type": "CIVIL"},
+                params={"year_type": DEFAULT_YEAR_TYPE},
                 timeout=DEFAULT_TIMEOUT,
             )
             response.raise_for_status()
@@ -243,7 +241,7 @@ async def get_diocesan_calendar(
             response = await client.get(
                 url,
                 headers=headers,
-                params={"year_type": "CIVIL"},
+                params={"year_type": DEFAULT_YEAR_TYPE},
                 timeout=DEFAULT_TIMEOUT,
             )
             response.raise_for_status()
@@ -412,7 +410,7 @@ async def get_liturgy_of_the_day(
             response = await client.get(
                 url,
                 headers=headers,
-                params={"year_type": "CIVIL"},
+                params={"year_type": DEFAULT_YEAR_TYPE},
                 timeout=DEFAULT_TIMEOUT,
             )
             response.raise_for_status()
@@ -503,7 +501,7 @@ async def get_announcement_easter_and_moveable_feasts(
             response = await client.get(
                 url,
                 headers=headers,
-                params={"year_type": "CIVIL"},
+                params={"year_type": DEFAULT_YEAR_TYPE},
                 timeout=DEFAULT_TIMEOUT,
             )
             response.raise_for_status()

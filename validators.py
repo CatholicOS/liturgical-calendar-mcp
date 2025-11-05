@@ -14,14 +14,14 @@ The functions are:
 
 from datetime import datetime
 from litcal_metadata_cache import CalendarMetadataCache
+from settings import VALID_CALENDAR_TYPES, DATE_FORMAT, MIN_YEAR, MAX_YEAR
 
 
 def validate_calendar_type(calendar_type: str) -> str:
     """Validate calendar type."""
-    valid_types = ["general", "national", "diocesan"]
-    if calendar_type.strip().lower() not in valid_types:
+    if calendar_type.strip().lower() not in VALID_CALENDAR_TYPES:
         raise ValueError(
-            f"Invalid calendar type: {calendar_type}. Must be one of {', '.join(valid_types)}"
+            f"Invalid calendar type: {calendar_type}. Must be one of {', '.join(VALID_CALENDAR_TYPES)}"
         )
     return calendar_type.strip().lower()
 
@@ -32,7 +32,7 @@ def validate_target_date(date_str: str) -> datetime:
         return datetime.now()
 
     try:
-        target_date = datetime.strptime(date_str.strip(), "%Y-%m-%d")
+        target_date = datetime.strptime(date_str.strip(), DATE_FORMAT)
         return target_date
     except ValueError as e:
         raise ValueError(f"Invalid date format: {date_str}. Expected YYYY-MM-DD") from e
@@ -79,7 +79,7 @@ def validate_year(year: int | None) -> int:
     if year is None:
         return datetime.now().year
 
-    if year < 1970 or year > 9999:
-        raise ValueError("Year must be between 1970 and 9999")
+    if year < MIN_YEAR or year > MAX_YEAR:
+        raise ValueError(f"Year must be between {MIN_YEAR} and {MAX_YEAR}")
 
     return year
