@@ -294,11 +294,10 @@ def _format_readings(readings: dict | str) -> list:
                 f"{ORDINAL_NUMBERS[i-1]}_reading"
             )
             psalm = readings.get(f"responsorial_psalm_{i}")
-            if reading or psalm:
-                lines.append(f"      Reading {i}: {reading if reading else 'N/A'}")
-                lines.append(
-                    f"      Responsorial Psalm {i}: {psalm if psalm else 'N/A'}"
-                )
+            lines.append(f"      Reading {i}: {reading if reading else 'N/A'}")
+            lines.append(
+                f"      Responsorial Psalm {i}: {psalm if psalm else 'N/A'}"
+            )
         lines.append(format_field(readings.get("epistle"), "      Epistle"))
         lines.append(
             format_field(
