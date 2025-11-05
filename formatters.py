@@ -229,7 +229,7 @@ def format_calendar_summary(data: dict) -> str:
 
 def _format_reading_field(value: str | None, label: str) -> str:
     """Format a single reading field with N/A for missing values."""
-    return f"   {label}: {value if value else 'N/A'}"
+    return f"{label}: {value if value else 'N/A'}"
 
 
 def _format_standard_readings(data: dict, indent: str = "   ") -> list:
