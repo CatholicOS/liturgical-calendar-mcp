@@ -9,15 +9,11 @@ import asyncio
 from pathlib import Path
 from typing import Optional, Dict, Any
 from models import CalendarCacheKey
+from settings import CALENDAR_CACHE_EXPIRY_HOURS, CACHE_DIR
+
 
 # Create logger as a child of the main litcal logger
 logger = logging.getLogger("litcal.cache")
-
-# === CONFIGURATION ===
-CACHE_EXPIRY_HOURS = 24 * 7  # Cache for 1 week
-CACHE_DIR = (
-    Path(__file__).resolve().parent / "cache"
-)  # Will be created in the same directory as the script
 
 
 class CalendarDataCache:
@@ -60,7 +56,7 @@ class CalendarDataCache:
             age = datetime.now() - datetime.fromtimestamp(stats.st_mtime)
 
             # Check if cache has expired
-            if age > timedelta(hours=CACHE_EXPIRY_HOURS):
+            if age > timedelta(hours=CALENDAR_CACHE_EXPIRY_HOURS):
                 logger.info("Cache expired for %s", key.to_cache_filename())
                 return None
 

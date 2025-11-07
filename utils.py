@@ -5,20 +5,13 @@ Utility functions for the MCP tools.
 import locale
 import logging
 from datetime import datetime, timezone
-from pathlib import Path
 from httpx import AsyncClient
 from enums import CalendarType
 from litcal_calendar_cache import CalendarDataCache
 from models import CalendarFetchRequest, CalendarCacheKey
+from settings import API_BASE_URL, DEFAULT_TIMEOUT
+from constants import FERIAL_CYCLE, FESTIVE_CYCLE, NOVERITIS_DIR
 
-
-FESTIVE_CYCLE = ["A", "B", "C"]
-FERIAL_CYCLE = ["I", "II"]
-
-# === CONFIGURATION ===
-NOVERITIS_DIR = Path(__file__).parent / "noveritis"
-API_BASE_URL = "https://litcal.johnromanodorazio.com/api/dev"
-DEFAULT_TIMEOUT = 30
 
 # Create logger as a child of the main litcal logger
 logger = logging.getLogger("litcal.utils")
