@@ -9,7 +9,8 @@ import httpx
 from mcp.server.fastmcp import FastMCP
 import pycountry
 from litcal_metadata_cache import CalendarMetadataCache
-from litcal_calendar_cache import CalendarCacheKey, CalendarDataCache
+from litcal_calendar_cache import CalendarDataCache
+from enums import YearType, CalendarType
 from formatters import (
     format_calendar_summary,
     format_liturgy_response,
@@ -21,20 +22,23 @@ from validators import (
     validate_target_date,
     validate_nation,
     validate_diocese,
+    validate_calendar_id,
 )
-from utils import build_calendar_url, filter_celebrations_by_date
+from utils import filter_celebrations_by_date, fetch_calendar_data
+from models import CalendarFetchRequest
 
+# Create logger as a child of the main litcal logger
 logger = logging.getLogger("litcal.server")
 
 # Initialize MCP server
 mcp = FastMCP(name="litcal")
 
-# Configuration
-DEFAULT_TIMEOUT = 30
+# Initialize httpx client
+http_client = httpx.AsyncClient(http2=True)
 
 # Initialize caches
+CalendarMetadataCache.set_http_client(http_client)
 calendar_cache = CalendarDataCache()
-
 
 # === MCP TOOLS ===
 
@@ -54,41 +58,22 @@ async def get_general_calendar(year: int | None = None, locale: str = "en") -> s
 
     try:
         year_int = validate_year(year)
-        locale = await CalendarMetadataCache.get_supported_locale("general", "", locale)
+        locale = await CalendarMetadataCache.get_supported_locale(
+            CalendarType.GENERAL_ROMAN, "", locale
+        )
 
-        # Try to get from cache first
-        cache_key = CalendarCacheKey("general", "", year_int, locale)
-        cached_data = await calendar_cache.async_get(cache_key)
-        if cached_data is not None:
-            logger.info(
-                "Using cached general calendar data for year %s (locale: %s)",
-                year_int,
-                locale,
-            )
-            return format_calendar_summary(cached_data)
+        # Fetch calendar data using helper function
+        request = CalendarFetchRequest(
+            calendar_type=CalendarType.GENERAL_ROMAN,
+            calendar_id="",
+            year=year_int,
+            target_locale=locale,
+            year_type=YearType.LITURGICAL,
+        )
+        data = await fetch_calendar_data(request, calendar_cache, http_client)
 
-        # Make API request if not in cache
-        url = build_calendar_url("general", "", year_int)
-        headers = {
-            "Accept": "application/json",
-            "Accept-Language": locale,
-        }
-
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                url,
-                headers=headers,
-                params={"year_type": "CIVIL"},
-                timeout=DEFAULT_TIMEOUT,
-            )
-            response.raise_for_status()
-            data = response.json()
-
-            # Cache the response (off the event loop)
-            await calendar_cache.async_update(cache_key, data)
-
-            # Format and return response
-            return format_calendar_summary(data)
+        # Format and return response
+        return format_calendar_summary(data)
 
     except ValueError as e:
         logger.exception("Error")
@@ -141,42 +126,21 @@ async def get_national_calendar(
         year_int = validate_year(year)
         nation_id = await validate_nation(nation)
         locale = await CalendarMetadataCache.get_supported_locale(
-            "national", nation_id, locale
+            CalendarType.NATIONAL, nation_id, locale
         )
-        # Try to get from cache first
-        cache_key = CalendarCacheKey("national", nation_id, year_int, locale)
-        cached_data = await calendar_cache.async_get(cache_key)
-        if cached_data is not None:
-            logger.info(
-                "Using cached national calendar data for %s year %s (locale: %s)",
-                nation_id,
-                year_int,
-                locale,
-            )
-            return format_calendar_summary(cached_data)
 
-        # Make API request if not in cache
-        url = build_calendar_url("national", nation_id, year_int)
-        headers = {
-            "Accept": "application/json",
-            "Accept-Language": locale,
-        }
+        # Fetch calendar data using helper function
+        request = CalendarFetchRequest(
+            calendar_type=CalendarType.NATIONAL,
+            calendar_id=nation_id,
+            year=year_int,
+            target_locale=locale,
+            year_type=YearType.LITURGICAL,
+        )
+        data = await fetch_calendar_data(request, calendar_cache, http_client)
 
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                url,
-                headers=headers,
-                params={"year_type": "CIVIL"},
-                timeout=DEFAULT_TIMEOUT,
-            )
-            response.raise_for_status()
-            data = response.json()
-
-            # Cache the response (off the event loop)
-            await calendar_cache.async_update(cache_key, data)
-
-            # Format and return response
-            return format_calendar_summary(data)
+        # Format and return response
+        return format_calendar_summary(data)
 
     except ValueError as e:
         logger.exception("Error")
@@ -218,42 +182,21 @@ async def get_diocesan_calendar(
         year_int = validate_year(year)
         diocese_id = await validate_diocese(diocese)
         locale = await CalendarMetadataCache.get_supported_locale(
-            "diocesan", diocese_id, locale
+            CalendarType.DIOCESAN, diocese_id, locale
         )
-        # Try to get from cache first
-        cache_key = CalendarCacheKey("diocesan", diocese_id, year_int, locale)
-        cached_data = await calendar_cache.async_get(cache_key)
-        if cached_data is not None:
-            logger.info(
-                "Using cached diocesan calendar data for %s year %s (locale: %s)",
-                diocese_id,
-                year_int,
-                locale,
-            )
-            return format_calendar_summary(cached_data)
 
-        # Make API request if not in cache
-        url = build_calendar_url("diocesan", diocese_id, year_int)
-        headers = {
-            "Accept": "application/json",
-            "Accept-Language": locale,
-        }
+        # Fetch calendar data using helper function
+        request = CalendarFetchRequest(
+            calendar_type=CalendarType.DIOCESAN,
+            calendar_id=diocese_id,
+            year=year_int,
+            target_locale=locale,
+            year_type=YearType.LITURGICAL,
+        )
+        data = await fetch_calendar_data(request, calendar_cache, http_client)
 
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                url,
-                headers=headers,
-                params={"year_type": "CIVIL"},
-                timeout=DEFAULT_TIMEOUT,
-            )
-            response.raise_for_status()
-            data = response.json()
-
-            # Cache the response (off the event loop)
-            await calendar_cache.async_update(cache_key, data)
-
-            # Format and return response
-            return format_calendar_summary(data)
+        # Format and return response
+        return format_calendar_summary(data)
 
     except ValueError as e:
         logger.exception("Error")
@@ -337,7 +280,7 @@ async def list_available_calendars() -> str:
 @mcp.tool()
 async def get_liturgy_of_the_day(
     date: str = "",
-    calendar_type: str = "general",
+    calendar_type: str = CalendarType.GENERAL_ROMAN.value,
     calendar_id: str = "",
     locale: str = "en",
 ) -> str:
@@ -367,74 +310,34 @@ async def get_liturgy_of_the_day(
 
     try:
         # Validate and normalize inputs
-        calendar_type = validate_calendar_type(calendar_type)
+        calendar_type_case = validate_calendar_type(calendar_type)
         target_date = validate_target_date(date)
-
-        # Validate calendar ID if needed
-        if calendar_type == "national":
-            calendar_id = await validate_nation(calendar_id)
-        elif calendar_type == "diocesan":
-            calendar_id = await validate_diocese(calendar_id)
-
-        # Get locale and try cache first
+        calendar_id = await validate_calendar_id(calendar_type_case, calendar_id)
         locale = await CalendarMetadataCache.get_supported_locale(
-            calendar_type, calendar_id, locale
+            calendar_type_case, calendar_id, locale
         )
 
-        # Try to get calendar from cache first
-        cache_key = CalendarCacheKey(
-            calendar_type, calendar_id, target_date.year, locale
+        # Fetch calendar data using helper function
+        request = CalendarFetchRequest(
+            calendar_type=calendar_type_case,
+            calendar_id=calendar_id,
+            year=target_date.year,
+            target_locale=locale,
+            year_type=YearType.CIVIL,
         )
-        cached_data = await calendar_cache.async_get(cache_key)
-        if cached_data is not None:
-            logger.info(
-                "Using cached calendar data for date %s, calendar %s_%s (locale: %s)",
-                target_date.date(),
-                calendar_type,
-                calendar_id or "general",
-                locale,
-            )
-            celebrations = filter_celebrations_by_date(cached_data, target_date)
-            if celebrations:
-                return format_liturgy_response(
-                    celebrations, target_date, cached_data.get("settings", {})
-                )
+        data = await fetch_calendar_data(request, calendar_cache, http_client)
 
-        # Make API request if not in cache or no celebrations found
-        url = build_calendar_url(calendar_type, calendar_id, target_date.year)
-        logger.info("Using calendar URL: %s", url)
-        headers = {
-            "Accept": "application/json",
-            "Accept-Language": locale,
-        }
+        # Filter celebrations for target date
+        celebrations = filter_celebrations_by_date(data, target_date)
 
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                url,
-                headers=headers,
-                params={"year_type": "CIVIL"},
-                timeout=DEFAULT_TIMEOUT,
-            )
-            response.raise_for_status()
-            data = response.json()
+        if not celebrations:
+            formatted_date = target_date.strftime("%B %d, %Y")
+            return f"❌ No liturgical celebrations found for {formatted_date}"
 
-            # Cache the full calendar response (off the event loop)
-            await calendar_cache.async_update(cache_key, data)
-
-            # Filter celebrations for target date
-            celebrations = filter_celebrations_by_date(data, target_date)
-
-            if celebrations is None:
-                return "❌ No liturgical calendar data found in response"
-
-            if not celebrations:
-                formatted_date = target_date.strftime("%B %d, %Y")
-                return f"❌ No liturgical celebrations found for {formatted_date}"
-
-            # Format and return response
-            return format_liturgy_response(
-                celebrations, target_date, data.get("settings", {})
-            )
+        # Format and return response
+        return format_liturgy_response(
+            celebrations, target_date, data.get("settings", {})
+        )
 
     except ValueError as e:
         logger.exception("Error")
@@ -449,7 +352,7 @@ async def get_liturgy_of_the_day(
 
 @mcp.tool()
 async def get_announcement_easter_and_moveable_feasts(
-    calendar_type: str = "general",
+    calendar_type: str = CalendarType.GENERAL_ROMAN.value,
     calendar_id: str = "",
     locale: str = "en",
     year: int | None = None,
@@ -471,49 +374,24 @@ async def get_announcement_easter_and_moveable_feasts(
     try:
         # Validate and normalize inputs
         year_int = validate_year(year)
-        calendar_type = validate_calendar_type(calendar_type)
-
-        # Validate calendar ID if needed
-        if calendar_type == "national":
-            calendar_id = await validate_nation(calendar_id)
-        elif calendar_type == "diocesan":
-            calendar_id = await validate_diocese(calendar_id)
-
-        # Build URL and get locale
-        url = build_calendar_url(calendar_type, calendar_id, year_int)
-        logger.info("Using calendar URL: %s", url)
+        calendar_type_case = validate_calendar_type(calendar_type)
+        calendar_id = await validate_calendar_id(calendar_type_case, calendar_id)
         locale = await CalendarMetadataCache.get_supported_locale(
-            calendar_type, calendar_id, locale
+            calendar_type_case, calendar_id, locale
         )
 
-        # Try to get calendar from cache first
-        cache_key = CalendarCacheKey(calendar_type, calendar_id, year_int, locale)
-        cached_data = await calendar_cache.async_get(cache_key)
-        if cached_data is not None:
-            # Format and return response
-            return format_announcement_response(cached_data, year_int)
+        # Fetch calendar data using helper function
+        request = CalendarFetchRequest(
+            calendar_type=calendar_type_case,
+            calendar_id=calendar_id,
+            year=year_int,
+            target_locale=locale,
+            year_type=YearType.CIVIL,
+        )
+        data = await fetch_calendar_data(request, calendar_cache, http_client)
 
-        # Make API request
-        headers = {
-            "Accept": "application/json",
-            "Accept-Language": locale,
-        }
-
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                url,
-                headers=headers,
-                params={"year_type": "CIVIL"},
-                timeout=DEFAULT_TIMEOUT,
-            )
-            response.raise_for_status()
-            data = response.json()
-
-            # Cache the full calendar response (off the event loop)
-            await calendar_cache.async_update(cache_key, data)
-
-            # Format and return response
-            return format_announcement_response(data, year_int)
+        # Format and return response
+        return format_announcement_response(data, year_int)
 
     except ValueError as e:
         logger.exception("Error")
