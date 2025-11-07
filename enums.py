@@ -13,8 +13,12 @@ class YearType(Enum):
 
 
 class CalendarType(Enum):
-    """Represents the types of calendars that can be requested from the Liturgical Calendar API."""
+    """
+    Represents the types of calendars that can be requested from the Liturgical Calendar API.
+    The value will determine the formulation of the path of the API request,
+    though it does not equate directly to the path parameter.
+    """
 
-    GENERAL_ROMAN = "general"
-    NATIONAL = "national"
-    DIOCESAN = "diocesan"
+    GENERAL_ROMAN = "GENERAL_ROMAN"
+    NATIONAL = "NATIONAL"
+    DIOCESAN = "DIOCESAN"
