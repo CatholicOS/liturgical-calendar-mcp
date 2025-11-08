@@ -11,9 +11,9 @@ project root directory. See litcal.config.example.yaml for a template.
 """
 
 import os
-import sys
+import logging
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 try:
     import yaml
@@ -32,6 +32,8 @@ from settings import (
 # User configuration file path
 CONFIG_FILE = Path(__file__).resolve().parent / "litcal.config.yaml"
 
+logger = logging.getLogger("litcal.config")
+
 
 def load_user_config() -> Dict[str, Any]:
     """
@@ -44,11 +46,8 @@ def load_user_config() -> Dict[str, Any]:
         return {}
 
     if yaml is None:
-        print(
-            f"Warning: PyYAML is not installed. Cannot load {CONFIG_FILE}",
-            file=sys.stderr,
-        )
-        print("Install with: pip install pyyaml", file=sys.stderr)
+        logger.warning("PyYAML is not installed. Cannot load %s", CONFIG_FILE)
+        logger.info("Install with: pip install pyyaml")
         return {}
 
     try:
@@ -57,20 +56,76 @@ def load_user_config() -> Dict[str, Any]:
             return config if isinstance(config, dict) else {}
     except yaml.YAMLError as e:
         # Log warning but don't fail - use defaults
-        print(f"Warning: Could not parse {CONFIG_FILE}: {e}", file=sys.stderr)
+        logger.warning("Could not parse %s: %s", CONFIG_FILE, e)
         return {}
     except OSError as e:
         # Log warning but don't fail - use defaults
-        print(f"Warning: Could not read {CONFIG_FILE}: {e}", file=sys.stderr)
+        logger.warning("Could not read %s: %s", CONFIG_FILE, e)
         return {}
 
 
-def get_config_value(
+def _convert_type(value: str, value_type: type) -> Any:
+    """
+    Convert a string value to the specified type.
+
+    Args:
+        value: The string value to convert
+        value_type: The type to convert to
+
+    Returns:
+        The converted value
+
+    Raises:
+        ValueError: If conversion fails
+    """
+    if value_type is int:
+        return int(value)
+    if value_type is float:
+        return float(value)
+    if value_type is bool:
+        return value.lower() in ("true", "1", "yes", "on")
+    if value_type is Path:
+        return Path(value)
+    return value
+
+
+def _apply_transform(
+    value: Any,
+    transform: Optional[Callable[[Any], Any]],
+    default: Any,
+    config_name: str,
+) -> Any:
+    """
+    Apply transform to a value with error handling.
+
+    Args:
+        value: The value to transform
+        transform: The transform function to apply
+        default: The default value to use if transform fails
+        config_name: Name of the config for logging
+
+    Returns:
+        Transformed value or default if transform fails
+    """
+    if transform is None:
+        return value
+
+    try:
+        return transform(value)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        # Intentionally catch all exceptions to ensure config loading never fails
+        logger.warning("Transform failed for %s: %s, using default", config_name, e)
+        return default
+
+
+def get_config_value(  # pylint: disable=too-many-arguments
     key: str,
     default: Any,
     user_config: Dict[str, Any],
+    *,
     env_var: Optional[str] = None,
     value_type: type = str,
+    transform: Optional[Callable[[Any], Any]] = None,
 ) -> Any:
     """
     Get a configuration value from environment, user config, or default.
@@ -81,45 +136,55 @@ def get_config_value(
         user_config: Dictionary of user configuration
         env_var: Environment variable name to check (optional)
         value_type: Type to convert the value to
+        transform: Optional callback to transform the value before returning
 
     Returns:
         The configuration value with priority: env_var > user_config > default
     """
+    config_name = env_var or key
+
     # First check environment variable
     if env_var and env_var in os.environ:
-        value = os.environ[env_var]
         try:
-            if value_type is int:
-                return int(value)
-            if value_type is float:
-                return float(value)
-            if value_type is bool:
-                return value.lower() in ("true", "1", "yes", "on")
-            if value_type is Path:
-                return Path(value)
-            return value
+            converted = _convert_type(os.environ[env_var], value_type)
+            return _apply_transform(converted, transform, default, config_name)
         except (ValueError, TypeError):
-            print(
-                f"Warning: Invalid value for {env_var}, using default", file=sys.stderr
-            )
+            logger.warning("Invalid value for %s, using default", config_name)
 
     # Then check user config
     if key in user_config:
         value = user_config[key]
         if value_type is Path and isinstance(value, str):
-            return Path(value)
-        return value
+            value = Path(value)
+        return _apply_transform(value, transform, default, config_name)
 
     # Finally use default
-    return default
+    return _apply_transform(default, transform, default, config_name)
 
 
 # Load user configuration once at module import
 _user_config = load_user_config()
 
+
+def _resolve_relative_path(path: Path) -> Path:
+    """
+    Resolve relative paths to be relative to the project root.
+
+    Args:
+        path: The path to resolve
+
+    Returns:
+        Absolute path (resolved relative to project root if originally relative)
+    """
+    if not path.is_absolute():
+        return Path(__file__).resolve().parent / path
+    return path
+
+
 # =============================================================================
 # API Configuration
 # =============================================================================
+
 
 # Base URL for the Liturgical Calendar API
 API_BASE_URL = get_config_value(
@@ -161,26 +226,15 @@ CALENDAR_CACHE_EXPIRY_HOURS = get_config_value(
     value_type=int,
 )
 
-# Cache directory path
-_cache_dir_default = DEFAULT_CACHE_DIR
-if "LITCAL_CACHE_DIR" in os.environ:
-    _cache_path = Path(os.environ["LITCAL_CACHE_DIR"])
-    if not _cache_path.is_absolute():
-        _cache_path = Path(__file__).resolve().parent / _cache_path
-    CACHE_DIR = _cache_path
-elif "cache_dir" in _user_config:
-    _cache_dir_value = _user_config["cache_dir"]
-    if isinstance(_cache_dir_value, str):
-        # Support both absolute and relative paths
-        _cache_path = Path(_cache_dir_value)
-        if not _cache_path.is_absolute():
-            # Make relative paths relative to the project root
-            _cache_path = Path(__file__).resolve().parent / _cache_path
-        CACHE_DIR = _cache_path
-    else:
-        CACHE_DIR = _cache_dir_default
-else:
-    CACHE_DIR = _cache_dir_default
+# Cache directory path (supports both absolute and relative paths)
+CACHE_DIR = get_config_value(
+    key="cache_dir",
+    default=DEFAULT_CACHE_DIR,
+    user_config=_user_config,
+    env_var="LITCAL_CACHE_DIR",
+    value_type=Path,
+    transform=_resolve_relative_path,
+)
 
 
 # =============================================================================
