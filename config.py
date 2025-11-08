@@ -168,13 +168,13 @@ _user_config = load_user_config()
 
 def _resolve_relative_path(path: Path) -> Path:
     """
-    Resolve relative paths to be relative to the project root.
+    Resolve relative paths to be relative to the config module directory.
 
     Args:
         path: The path to resolve
 
     Returns:
-        Absolute path (resolved relative to project root if originally relative)
+        Absolute path (resolved relative to config.py's directory if originally relative)
     """
     if not path.is_absolute():
         return Path(__file__).resolve().parent / path
