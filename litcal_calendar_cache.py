@@ -9,7 +9,7 @@ import asyncio
 from pathlib import Path
 from typing import Optional, Dict, Any
 from models import CalendarCacheKey
-from settings import CALENDAR_CACHE_EXPIRY_HOURS, CACHE_DIR
+from config import CALENDAR_CACHE_EXPIRY_HOURS, CACHE_DIR
 
 
 # Create logger as a child of the main litcal logger

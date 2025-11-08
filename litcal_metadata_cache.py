@@ -7,7 +7,7 @@ from typing import ClassVar, Optional, Dict, Set, List, TypedDict
 from datetime import datetime, timedelta
 import httpx
 from enums import CalendarType
-from settings import METADATA_CACHE_EXPIRY_HOURS, API_BASE_URL, DEFAULT_TIMEOUT
+from config import METADATA_CACHE_EXPIRY_HOURS, API_BASE_URL, DEFAULT_TIMEOUT
 
 
 # Create logger as a child of the main litcal logger

@@ -1,0 +1,86 @@
+# Liturgical Calendar MCP Server - User Configuration Example
+#
+# Copy this file to 'litcal.config.yaml' and customize the values below.
+# This file is checked into git; your 'litcal.config.yaml' will be ignored.
+#
+# All settings are optional. If not specified, defaults from settings.py are used.
+# You can also override any setting using environment variables (see below).
+
+# =============================================================================
+# API Configuration
+# =============================================================================
+
+# Base URL for the Liturgical Calendar API
+# Default: "https://litcal.johnromanodorazio.com/api/dev"
+# Environment variable: LITCAL_API_BASE_URL
+#
+# Use this if you want to connect to a different API endpoint
+# (e.g., a local development instance or production endpoint)
+#
+# api_base_url: "https://litcal.johnromanodorazio.com/api/dev"
+
+# Default timeout for API requests (in seconds)
+# Default: 30
+# Environment variable: LITCAL_DEFAULT_TIMEOUT
+#
+# Increase this value if you experience timeout errors
+# or decrease it for faster failures in unstable networks
+#
+# default_timeout: 30
+
+# =============================================================================
+# Cache Configuration
+# =============================================================================
+
+# Cache expiry time for metadata (in hours)
+# Default: 24 (1 day)
+# Environment variable: LITCAL_METADATA_CACHE_EXPIRY_HOURS
+#
+# Metadata includes the list of available calendars and doesn't change often.
+# Increasing this value reduces API calls but may delay discovery of new calendars.
+#
+# metadata_cache_expiry_hours: 24
+
+# Cache expiry time for calendar data (in hours)
+# Default: 168 (1 week / 24 * 7)
+# Environment variable: LITCAL_CALENDAR_CACHE_EXPIRY_HOURS
+#
+# Calendar data is liturgical event information for specific years.
+# This data is stable and doesn't change, so a longer cache is safe.
+#
+# calendar_cache_expiry_hours: 168
+
+# Cache directory path
+# Default: "./cache" (relative to the project root)
+# Environment variable: LITCAL_CACHE_DIR
+#
+# You can use either absolute or relative paths.
+# Relative paths are resolved from the project root.
+#
+# Examples:
+#   cache_dir: "./cache"              # Default: cache folder in project root
+#   cache_dir: "/tmp/litcal-cache"    # Absolute path
+#   cache_dir: "~/.cache/litcal"      # Home directory (requires shell expansion)
+#
+# cache_dir: "./cache"
+
+# =============================================================================
+# Example Configurations for Different Use Cases
+# =============================================================================
+
+# Development mode - shorter cache times for faster updates:
+# ---
+# metadata_cache_expiry_hours: 1
+# calendar_cache_expiry_hours: 1
+# cache_dir: "./dev-cache"
+
+# Production mode - longer cache times and custom location:
+# ---
+# metadata_cache_expiry_hours: 72
+# calendar_cache_expiry_hours: 720
+# cache_dir: "/var/cache/litcal"
+
+# Custom API endpoint (e.g., local development):
+# ---
+# api_base_url: "http://localhost:8000/api/dev"
+# default_timeout: 60

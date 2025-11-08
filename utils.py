@@ -9,7 +9,7 @@ from httpx import AsyncClient
 from enums import CalendarType
 from litcal_calendar_cache import CalendarDataCache
 from models import CalendarFetchRequest, CalendarCacheKey
-from settings import API_BASE_URL, DEFAULT_TIMEOUT
+from config import API_BASE_URL, DEFAULT_TIMEOUT
 from constants import FERIAL_CYCLE, FESTIVE_CYCLE, NOVERITIS_DIR
 
 

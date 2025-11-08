@@ -1,8 +1,20 @@
 """
-Centralized configuration for the Liturgical Calendar MCP Server.
+Default settings for the Liturgical Calendar MCP Server.
 
-This module contains all configurable constants used throughout the application,
-including API URLs, file paths, cache settings...
+This module contains the default configuration values used throughout the application.
+
+IMPORTANT: DO NOT modify this file directly to customize settings!
+Instead, create a 'litcal.config.yaml' file in the project root.
+See 'litcal.config.example.yaml' for a template.
+
+The config.py module will load your custom settings from litcal.config.yaml
+and merge them with these defaults. You can also use environment variables
+to override any setting (highest priority).
+
+Configuration priority:
+1. Environment variables (e.g., LITCAL_API_BASE_URL)
+2. User config file (litcal.config.yaml)
+3. This file (settings.py - defaults)
 """
 
 from pathlib import Path
