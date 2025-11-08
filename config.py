@@ -159,7 +159,7 @@ def get_config_value(  # pylint: disable=too-many-arguments
         return _apply_transform(value, transform, default, config_name)
 
     # Finally use default
-    return _apply_transform(default, transform, default, config_name)
+    return default
 
 
 # Load user configuration once at module import
@@ -179,6 +179,23 @@ def _resolve_relative_path(path: Path) -> Path:
     if not path.is_absolute():
         return Path(__file__).resolve().parent / path
     return path
+
+
+def _validate_positive_integer(value: int, default: int) -> int:
+    """
+    Ensure value is positive.
+
+    Args:
+        value: The value to validate
+        default: The default value to return if validation fails
+
+    Returns:
+        The value if positive, otherwise the default
+    """
+    if value <= 0:
+        logger.warning("Invalid value %d, using default %d", value, default)
+        return default
+    return value
 
 
 # =============================================================================
@@ -202,6 +219,7 @@ DEFAULT_TIMEOUT = get_config_value(
     user_config=_user_config,
     env_var="LITCAL_DEFAULT_TIMEOUT",
     value_type=int,
+    transform=lambda v: _validate_positive_integer(v, DEFAULT_DEFAULT_TIMEOUT),
 )
 
 # =============================================================================
@@ -215,6 +233,7 @@ METADATA_CACHE_EXPIRY_HOURS = get_config_value(
     user_config=_user_config,
     env_var="LITCAL_METADATA_CACHE_EXPIRY_HOURS",
     value_type=int,
+    transform=lambda v: _validate_positive_integer(v, DEFAULT_METADATA_CACHE_EXPIRY_HOURS),
 )
 
 # Cache expiry time for calendar data (in hours)
@@ -224,6 +243,7 @@ CALENDAR_CACHE_EXPIRY_HOURS = get_config_value(
     user_config=_user_config,
     env_var="LITCAL_CALENDAR_CACHE_EXPIRY_HOURS",
     value_type=int,
+    transform=lambda v: _validate_positive_integer(v, DEFAULT_CALENDAR_CACHE_EXPIRY_HOURS),
 )
 
 # Cache directory path (supports both absolute and relative paths)
