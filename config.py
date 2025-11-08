@@ -85,13 +85,13 @@ def get_config_value(
     if env_var and env_var in os.environ:
         value = os.environ[env_var]
         try:
-            if value_type == int:
+            if value_type is int:
                 return int(value)
-            if value_type == float:
+            if value_type is float:
                 return float(value)
-            if value_type == bool:
+            if value_type is bool:
                 return value.lower() in ("true", "1", "yes", "on")
-            if value_type == Path:
+            if value_type is Path:
                 return Path(value)
             return value
         except (ValueError, TypeError):
@@ -100,7 +100,7 @@ def get_config_value(
     # Then check user config
     if key in user_config:
         value = user_config[key]
-        if value_type == Path and isinstance(value, str):
+        if value_type is Path and isinstance(value, str):
             return Path(value)
         return value
 
@@ -157,7 +157,12 @@ CALENDAR_CACHE_EXPIRY_HOURS = get_config_value(
 
 # Cache directory path
 _cache_dir_default = DEFAULT_CACHE_DIR
-if "cache_dir" in _user_config:
+if "LITCAL_CACHE_DIR" in os.environ:
+    _cache_path = Path(os.environ["LITCAL_CACHE_DIR"])
+    if not _cache_path.is_absolute():
+        _cache_path = Path(__file__).resolve().parent / _cache_path
+    CACHE_DIR = _cache_path
+elif "cache_dir" in _user_config:
     _cache_dir_value = _user_config["cache_dir"]
     if isinstance(_cache_dir_value, str):
         # Support both absolute and relative paths
@@ -168,11 +173,6 @@ if "cache_dir" in _user_config:
         CACHE_DIR = _cache_path
     else:
         CACHE_DIR = _cache_dir_default
-elif "LITCAL_CACHE_DIR" in os.environ:
-    _cache_path = Path(os.environ["LITCAL_CACHE_DIR"])
-    if not _cache_path.is_absolute():
-        _cache_path = Path(__file__).resolve().parent / _cache_path
-    CACHE_DIR = _cache_path
 else:
     CACHE_DIR = _cache_dir_default
 
