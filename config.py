@@ -233,7 +233,9 @@ METADATA_CACHE_EXPIRY_HOURS = get_config_value(
     user_config=_user_config,
     env_var="LITCAL_METADATA_CACHE_EXPIRY_HOURS",
     value_type=int,
-    transform=lambda v: _validate_positive_integer(v, DEFAULT_METADATA_CACHE_EXPIRY_HOURS),
+    transform=lambda v: _validate_positive_integer(
+        v, DEFAULT_METADATA_CACHE_EXPIRY_HOURS
+    ),
 )
 
 # Cache expiry time for calendar data (in hours)
@@ -243,7 +245,9 @@ CALENDAR_CACHE_EXPIRY_HOURS = get_config_value(
     user_config=_user_config,
     env_var="LITCAL_CALENDAR_CACHE_EXPIRY_HOURS",
     value_type=int,
-    transform=lambda v: _validate_positive_integer(v, DEFAULT_CALENDAR_CACHE_EXPIRY_HOURS),
+    transform=lambda v: _validate_positive_integer(
+        v, DEFAULT_CALENDAR_CACHE_EXPIRY_HOURS
+    ),
 )
 
 # Cache directory path (supports both absolute and relative paths)
