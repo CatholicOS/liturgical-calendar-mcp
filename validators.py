@@ -19,7 +19,7 @@ from enums import CalendarType
 
 def validate_calendar_type(calendar_type: str) -> CalendarType:
     """Validate calendar type."""
-    calendar_type_normalized = calendar_type.strip().lower()
+    calendar_type_normalized = calendar_type.strip().upper()
     if calendar_type_normalized not in (ct.value for ct in CalendarType):
         raise ValueError(
             f"Invalid calendar type: {calendar_type_normalized}. Must be one of {', '.join(repr(ct.value) for ct in CalendarType)}"
