@@ -44,7 +44,10 @@ def load_user_config() -> Dict[str, Any]:
         return {}
 
     if yaml is None:
-        print(f"Warning: PyYAML is not installed. Cannot load {CONFIG_FILE}", file=sys.stderr)
+        print(
+            f"Warning: PyYAML is not installed. Cannot load {CONFIG_FILE}",
+            file=sys.stderr,
+        )
         print("Install with: pip install pyyaml", file=sys.stderr)
         return {}
 
@@ -96,7 +99,9 @@ def get_config_value(
                 return Path(value)
             return value
         except (ValueError, TypeError):
-            print(f"Warning: Invalid value for {env_var}, using default", file=sys.stderr)
+            print(
+                f"Warning: Invalid value for {env_var}, using default", file=sys.stderr
+            )
 
     # Then check user config
     if key in user_config:
