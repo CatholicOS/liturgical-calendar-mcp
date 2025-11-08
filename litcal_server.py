@@ -54,12 +54,14 @@ async def get_general_calendar(year: int | None = None, locale: str = "en") -> s
 
     Example: locale='fr', year=2023
     """
-    logger.info("Fetching General Calendar for year %d (locale %s)", year, locale)
 
     try:
         year_int = validate_year(year)
         locale = await CalendarMetadataCache.get_supported_locale(
             CalendarType.GENERAL_ROMAN, "", locale
+        )
+        logger.info(
+            "Fetching General Calendar for year %d (locale %s)", year_int, locale
         )
 
         # Fetch calendar data using helper function
@@ -115,18 +117,18 @@ async def get_national_calendar(
 
     Example: nation='CA', locale='fr_CA', year=2023
     """
-    logger.info(
-        "Fetching National Calendar for %s for year %d (locale %s)",
-        nation,
-        year,
-        locale,
-    )
 
     try:
         year_int = validate_year(year)
         nation_id = await validate_nation(nation)
         locale = await CalendarMetadataCache.get_supported_locale(
             CalendarType.NATIONAL, nation_id, locale
+        )
+        logger.info(
+            "Fetching National Calendar for %s for year %d (locale %s)",
+            nation_id,
+            year_int,
+            locale,
         )
 
         # Fetch calendar data using helper function
@@ -171,18 +173,18 @@ async def get_diocesan_calendar(
 
     Example: diocese='romamo_it', locale='it_IT', year=2023
     """
-    logger.info(
-        "Fetching Diocesan Calendar for %s for the year %s (locale %s)",
-        diocese,
-        year,
-        locale,
-    )
 
     try:
         year_int = validate_year(year)
         diocese_id = await validate_diocese(diocese)
         locale = await CalendarMetadataCache.get_supported_locale(
             CalendarType.DIOCESAN, diocese_id, locale
+        )
+        logger.info(
+            "Fetching Diocesan Calendar for %s for the year %s (locale %s)",
+            diocese_id,
+            year_int,
+            locale,
         )
 
         # Fetch calendar data using helper function
@@ -300,13 +302,6 @@ async def get_liturgy_of_the_day(
     - Liturgy for a specific date in Rome diocese: date='2024-06-29', calendar_type='DIOCESAN', calendar_id='romamo_it', locale='it_IT'
     - Today's liturgy in the calendar for Canada in French: date='', calendar_type='NATIONAL', calendar_id='CA', locale='fr_CA'
     """
-    logger.info(
-        "Fetching liturgy of the day for date %s, calendar_type %s, calendar_id %s, locale %s",
-        date,
-        calendar_type,
-        calendar_id,
-        locale,
-    )
 
     try:
         # Validate and normalize inputs
@@ -315,6 +310,13 @@ async def get_liturgy_of_the_day(
         calendar_id = await validate_calendar_id(calendar_type_case, calendar_id)
         locale = await CalendarMetadataCache.get_supported_locale(
             calendar_type_case, calendar_id, locale
+        )
+        logger.info(
+            "Fetching liturgy of the day for date %s, calendar_type %s, calendar_id %s, locale %s",
+            target_date,
+            calendar_type_case.value,
+            calendar_id,
+            locale,
         )
 
         # Fetch calendar data using helper function
@@ -369,7 +371,6 @@ async def get_announcement_easter_and_moveable_feasts(
     - locale: Locale code for translations (e.g., "en", "fr_CA"). Must have a regional identifier for national or diocesan calendars. Defaults to "en".
     - year: Four-digit year (e.g., 2024). Defaults to current year if not provided.
     """
-    logger.info("Fetching Easter and moveable feasts for year %d", year)
 
     try:
         # Validate and normalize inputs
@@ -378,6 +379,13 @@ async def get_announcement_easter_and_moveable_feasts(
         calendar_id = await validate_calendar_id(calendar_type_case, calendar_id)
         locale = await CalendarMetadataCache.get_supported_locale(
             calendar_type_case, calendar_id, locale
+        )
+        logger.info(
+            "Fetching Easter and moveable feasts for calendar type %s, calendar_id %s, locale %s, year %d",
+            calendar_type_case.value,
+            calendar_id,
+            locale,
+            year_int,
         )
 
         # Fetch calendar data using helper function
