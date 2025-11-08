@@ -11,6 +11,7 @@ project root directory. See litcal.config.example.yaml for a template.
 """
 
 import os
+import sys
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -43,8 +44,8 @@ def load_user_config() -> Dict[str, Any]:
         return {}
 
     if yaml is None:
-        print(f"Warning: PyYAML is not installed. Cannot load {CONFIG_FILE}")
-        print("Install with: pip install pyyaml")
+        print(f"Warning: PyYAML is not installed. Cannot load {CONFIG_FILE}", file=sys.stderr)
+        print("Install with: pip install pyyaml", file=sys.stderr)
         return {}
 
     try:
@@ -53,11 +54,11 @@ def load_user_config() -> Dict[str, Any]:
             return config if isinstance(config, dict) else {}
     except yaml.YAMLError as e:
         # Log warning but don't fail - use defaults
-        print(f"Warning: Could not parse {CONFIG_FILE}: {e}")
+        print(f"Warning: Could not parse {CONFIG_FILE}: {e}", file=sys.stderr)
         return {}
     except OSError as e:
         # Log warning but don't fail - use defaults
-        print(f"Warning: Could not read {CONFIG_FILE}: {e}")
+        print(f"Warning: Could not read {CONFIG_FILE}: {e}", file=sys.stderr)
         return {}
 
 
@@ -95,7 +96,7 @@ def get_config_value(
                 return Path(value)
             return value
         except (ValueError, TypeError):
-            print(f"Warning: Invalid value for {env_var}, using default")
+            print(f"Warning: Invalid value for {env_var}, using default", file=sys.stderr)
 
     # Then check user config
     if key in user_config:
