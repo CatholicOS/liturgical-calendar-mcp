@@ -11,6 +11,6 @@ if __name__ == "__main__":
             "date": "3056-12-18",
             "target_locale": "nl_NL",
             "calendar_id": "NL",
-            "calendar_type": "national",
+            "calendar_type": "NATIONAL",
         },
     )

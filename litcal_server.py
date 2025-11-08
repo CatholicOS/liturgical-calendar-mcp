@@ -49,12 +49,12 @@ async def get_general_calendar(year: int | None = None, locale: str = "en") -> s
     Retrieve the General Roman Calendar for a specific year with optional locale.
 
     Parameters:
-    - year: Four-digit year (e.g., "2024"). Defaults to current year if not provided.
+    - year: Four-digit year (e.g., 2024). Defaults to current year if not provided.
     - locale: Locale code for translations (e.g., "en", "fr"). Defaults to "en".
 
-    Example: locale='fr', year='2023'
+    Example: locale='fr', year=2023
     """
-    logger.info("Fetching General Calendar for year %s (locale %s)", year, locale)
+    logger.info("Fetching General Calendar for year %d (locale %s)", year, locale)
 
     try:
         year_int = validate_year(year)
@@ -110,13 +110,13 @@ async def get_national_calendar(
 
     Parameters:
     - nation: Two-letter country code like 'CA' for Canada or 'US' for United States.
-    - year: Four-digit year (e.g., "2024"). Defaults to current year if not provided.
+    - year: Four-digit year (e.g., 2024). Defaults to current year if not provided.
     - locale: Use format like 'fr_CA' for French-Canadian; infer the regional format from the nation parameter. Defaults to 'en_US'.
 
-    Example: nation='CA', locale='fr_CA', year='2023'
+    Example: nation='CA', locale='fr_CA', year=2023
     """
     logger.info(
-        "Fetching National Calendar for %s for year %s (locale %s)",
+        "Fetching National Calendar for %s for year %d (locale %s)",
         nation,
         year,
         locale,
@@ -166,10 +166,10 @@ async def get_diocesan_calendar(
 
     Parameters:
     - diocese: Diocese ID like 'romamo_it' for Diocese of Rome.
-    - year: Four-digit year (e.g., "2024"). Defaults to current year if not provided.
+    - year: Four-digit year (e.g., 2024). Defaults to current year if not provided.
     - locale: Use format like 'fr_CA' for French-Canadian; infer the regional format from the nation that the diocese belongs to. Defaults to 'en_US'.
 
-    Example: diocese='romamo_it', locale='it_IT', year='2023'
+    Example: diocese='romamo_it', locale='it_IT', year=2023
     """
     logger.info(
         "Fetching Diocesan Calendar for %s for the year %s (locale %s)",
@@ -289,16 +289,16 @@ async def get_liturgy_of_the_day(
 
     Parameters:
     - date: Date in YYYY-MM-DD format (e.g., "2024-03-15"). Defaults to today if not provided.
-    - calendar_type: Type of calendar - "general", "national", or "diocesan". Defaults to "general".
+    - calendar_type: Type of calendar - "GENERAL_ROMAN", "NATIONAL", or "DIOCESAN". Defaults to "GENERAL_ROMAN".
     - calendar_id: Calendar identifier (nation code like 'US' or diocese id like 'romamo_it').
                    Required for national/diocesan calendars, ignored for general calendar.
     - locale: Locale code for translations (e.g., "en", "fr_CA"). Must have a regional identifier for national or diocesan calendars. Defaults to "en".
 
     Examples:
-    - Today's liturgy in the general roman calendar: date='', calendar_type='general'
-    - Liturgy for a specific date in US: date='2024-12-25', calendar_type='national', calendar_id='US', locale='en_US'
-    - Liturgy for a specific date in Rome diocese: date='2024-06-29', calendar_type='diocesan', calendar_id='romamo_it', locale='it_IT'
-    - Today's liturgy in the calendar for Canada in French: date='', calendar_type='national', calendar_id='CA', locale='fr_CA'
+    - Today's liturgy in the general roman calendar: date='', calendar_type='GENERAL_ROMAN'
+    - Liturgy for a specific date in US: date='2024-12-25', calendar_type='NATIONAL', calendar_id='US', locale='en_US'
+    - Liturgy for a specific date in Rome diocese: date='2024-06-29', calendar_type='DIOCESAN', calendar_id='romamo_it', locale='it_IT'
+    - Today's liturgy in the calendar for Canada in French: date='', calendar_type='NATIONAL', calendar_id='CA', locale='fr_CA'
     """
     logger.info(
         "Fetching liturgy of the day for date %s, calendar_type %s, calendar_id %s, locale %s",
@@ -363,13 +363,13 @@ async def get_announcement_easter_and_moveable_feasts(
     Preserve all markdown formatting, punctuation, and line breaks exactly as in the response, including any links.
 
     Parameters:
-    - calendar_type: Type of calendar - "general", "national", or "diocesan". Defaults to "general".
+    - calendar_type: Type of calendar - "GENERAL_ROMAN", "NATIONAL", or "DIOCESAN". Defaults to "GENERAL_ROMAN".
     - calendar_id: Calendar identifier (nation code like 'US' or diocese id like 'romamo_it').
                    Required for national/diocesan calendars, ignored for general calendar.
     - locale: Locale code for translations (e.g., "en", "fr_CA"). Must have a regional identifier for national or diocesan calendars. Defaults to "en".
-    - year: Four-digit year (e.g., `2024`). Defaults to current year if not provided.
+    - year: Four-digit year (e.g., 2024). Defaults to current year if not provided.
     """
-    logger.info("Fetching Easter and moveable feasts for year %s", year)
+    logger.info("Fetching Easter and moveable feasts for year %d", year)
 
     try:
         # Validate and normalize inputs
