@@ -15,6 +15,14 @@ The functions included in this module are:
 - _format_liturgical_seasons(events: list): Format key liturgical season events for display
 - _format_particular_celebrations(events: list): Format celebrations particular to the current calendar, for display
 - _format_day_month(day: int, month: int): Format a day and month for display
+- _format_reading_field(value: str | None, label: str): Format a single reading field with N/A for missing values
+- _format_standard_readings(data: dict, indent: str): Format a standard readings block (ferial or festive)
+- _format_easter_vigil_readings(readings: dict): Format Easter Vigil readings (seven readings with epistle)
+- _format_christmas_readings(readings: dict): Format Christmas readings (night, dawn, day masses)
+- _format_easter_sunday_readings(readings: dict): Format Easter Sunday readings (day and evening)
+- _format_multiple_schema_readings(readings: dict): Format multiple schema readings (All Souls Day options)
+- _format_seasonal_readings(readings: dict): Format seasonal readings (easter_season/outside_easter_season)
+- _format_readings(readings: dict | str): Format readings data into human-readable text
 - format_liturgy_response(data: dict): Format liturgy data into a readable summary
 - format_announcement_response(data: dict): Format announcement data into a readable summary
 - format_suppressed_reinstated_events(data: dict): Format suppressed and reinstated events for display
