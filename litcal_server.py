@@ -356,6 +356,10 @@ async def get_liturgy_of_the_day(
     - Liturgy for a specific date in US: date='2024-12-25', calendar_type='national', calendar_id='US', locale='en_US'
     - Liturgy for a specific date in Rome diocese: date='2024-06-29', calendar_type='diocesan', calendar_id='romamo_it', locale='it_IT'
     - Today's liturgy in the calendar for Canada in French: date='', calendar_type='national', calendar_id='CA', locale='fr_CA'
+
+    Important: When presenting the readings to the user, do not summarize them. Output them in a readable format,
+    maintaining the original structure and the title for each reading. If there is a pipe character (|),
+    it should be interpreted as an alternative reading.
     """
     logger.info(
         "Fetching liturgy of the day for date %s, calendar_type %s, calendar_id %s, locale %s",

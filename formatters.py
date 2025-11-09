@@ -278,7 +278,9 @@ def _format_easter_vigil_readings(readings: dict) -> list:
     ]
     for i in range(1, 8):
         reading = readings.get(f"{ordinal_numbers[i-1]}_reading")
-        psalm = readings.get(f"responsorial_psalm_{i}")
+        # First psalm is 'responsorial_psalm', others are 'responsorial_psalm_2' through 'responsorial_psalm_7'
+        psalm_key = "responsorial_psalm" if i == 1 else f"responsorial_psalm_{i}"
+        psalm = readings.get(psalm_key)
         lines.append(f"      Reading {i}: {reading if reading else 'N/A'}")
         lines.append(f"      Responsorial Psalm {i}: {psalm if psalm else 'N/A'}")
     lines.append(_format_reading_field(readings.get("epistle"), "      Epistle"))
