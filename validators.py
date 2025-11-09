@@ -14,16 +14,17 @@ The functions are:
 
 from datetime import datetime
 from litcal_metadata_cache import CalendarMetadataCache
+from enums import CalendarType
 
 
-def validate_calendar_type(calendar_type: str) -> str:
+def validate_calendar_type(calendar_type: str) -> CalendarType:
     """Validate calendar type."""
-    valid_types = ["general", "national", "diocesan"]
-    if calendar_type.strip().lower() not in valid_types:
+    calendar_type_normalized = calendar_type.strip().upper()
+    if calendar_type_normalized not in (ct.value for ct in CalendarType):
         raise ValueError(
-            f"Invalid calendar type: {calendar_type}. Must be one of {', '.join(valid_types)}"
+            f"Invalid calendar type: {calendar_type_normalized}. Must be one of {', '.join(repr(ct.value) for ct in CalendarType)}"
         )
-    return calendar_type.strip().lower()
+    return CalendarType(calendar_type_normalized)
 
 
 def validate_target_date(date_str: str) -> datetime:
@@ -72,6 +73,15 @@ async def validate_diocese(diocese: str) -> str:
         )
 
     return normalized_lower
+
+
+async def validate_calendar_id(calendar_type: CalendarType, calendar_id: str) -> str:
+    """Validate calendar ID based on calendar type."""
+    if calendar_type == CalendarType.NATIONAL:
+        return await validate_nation(calendar_id)
+    if calendar_type == CalendarType.DIOCESAN:
+        return await validate_diocese(calendar_id)
+    return calendar_id
 
 
 def validate_year(year: int | None) -> int:

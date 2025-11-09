@@ -11,6 +11,6 @@ if __name__ == "__main__":
             "year": 2023,
             "target_locale": "fr_CA",
             "calendar_id": "CA",
-            "calendar_type": "national",
+            "calendar_type": "NATIONAL",
         },
     )

@@ -3,23 +3,33 @@ Utility functions for the MCP tools.
 """
 
 import locale
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
+from httpx import AsyncClient
+from enums import CalendarType
+from litcal_calendar_cache import CalendarDataCache
+from models import CalendarFetchRequest, CalendarCacheKey
 
 
-NOVERITIS_DIR = Path(__file__).parent / "noveritis"
 FESTIVE_CYCLE = ["A", "B", "C"]
 FERIAL_CYCLE = ["I", "II"]
+
+# === CONFIGURATION ===
+NOVERITIS_DIR = Path(__file__).parent / "noveritis"
 API_BASE_URL = "https://litcal.johnromanodorazio.com/api/dev"
 DEFAULT_TIMEOUT = 30
 
+# Create logger as a child of the main litcal logger
+logger = logging.getLogger("litcal.utils")
 
-def build_calendar_url(calendar_type: str, calendar_id: str, year: int) -> str:
+
+def build_calendar_url(calendar_type: CalendarType, calendar_id: str, year: int) -> str:
     """Build the appropriate API URL based on calendar type."""
-    if calendar_type == "general":
+    if calendar_type == CalendarType.GENERAL_ROMAN:
         return f"{API_BASE_URL}/calendar/{year}"
 
-    if calendar_type == "national":
+    if calendar_type == CalendarType.NATIONAL:
         return f"{API_BASE_URL}/calendar/nation/{calendar_id}/{year}"
 
     # Diocesan calendar
@@ -27,10 +37,7 @@ def build_calendar_url(calendar_type: str, calendar_id: str, year: int) -> str:
 
 
 def filter_celebrations_by_date(data: dict, target_date: datetime) -> list:
-    """Filter liturgical celebrations for a specific date."""
-    if "litcal" not in data:
-        return None
-
+    """Filter celebrations by target date."""
     # Format target date to RFC 3339 timestamp at midnight UTC
     target_date_str = target_date.replace(
         hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc
@@ -79,3 +86,61 @@ def calculate_year_cycles(year: int) -> dict:
         "festive_year_cycle": festive_year_cycle,
         "ferial_year_cycle": ferial_year_cycle,
     }
+
+
+async def fetch_calendar_data(
+    request: CalendarFetchRequest,
+    calendar_cache: CalendarDataCache,
+    http_client: AsyncClient,
+) -> dict:
+    """
+    Fetch calendar data either from cache or from API.
+
+    Args:
+        request: `CalendarFetchRequest` containing parameters to fetch calendar data
+        calendar_cache: Instance of `CalendarDataCache`
+        http_client: Instance of `httpx.AsyncClient`
+
+    Returns:
+        dict: Calendar data either from cache or freshly fetched from API
+
+    Raises:
+        httpx.HTTPStatusError: On HTTP errors from the API
+        httpx.RequestError: On network errors
+    """
+    # Try to get from cache first (calendar_cache is required - dependency injected)
+    cache_key = CalendarCacheKey(
+        request.calendar_type,
+        request.calendar_id,
+        request.year,
+        request.target_locale,
+        request.year_type,
+    )
+    cached_data = await calendar_cache.async_get(cache_key)
+    if cached_data is not None:
+        logger.info(
+            "Fetched calendar data from cache %s", cache_key.to_cache_filename()
+        )
+        return cached_data
+
+    # Make API request if not in cache
+    url = build_calendar_url(request.calendar_type, request.calendar_id, request.year)
+    headers = {
+        "Accept": "application/json",
+        "Accept-Language": request.target_locale,
+    }
+
+    response = await http_client.get(
+        url,
+        params={"year_type": request.year_type.value},
+        headers=headers,
+        timeout=DEFAULT_TIMEOUT,
+    )
+    response.raise_for_status()
+    data = response.json()
+    logger.info("Fetched calendar data from API at URL %s", url)
+
+    # Cache the response (off the event loop)
+    await calendar_cache.async_update(cache_key, data)
+
+    return data
