@@ -349,6 +349,14 @@ async def get_liturgy_of_the_day(
         logger.exception("Error")
         return f"❌ Error: {str(e)}"
     except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            logger.error(
+                "Calendar not found for type %s, id %s, year %s",
+                calendar_type_case.value,
+                calendar_id,
+                target_date.year,
+            )
+            return f"❌ Calendar not found for {calendar_type_case.value} calendar"
         logger.exception("HTTP error fetching liturgy")
         return f"❌ HTTP error: {e.response.status_code} - {e.response.text}"
     except httpx.RequestError as e:
