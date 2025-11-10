@@ -133,7 +133,7 @@ def _apply_transform(
         return default
 
 
-def _get_config_value(  # pylint: disable=too-many-arguments
+def _get_config_value(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     key: str,
     default: Any,
     user_config: Dict[str, Any],
