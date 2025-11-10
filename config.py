@@ -170,7 +170,9 @@ def _get_config_value(
                 converted, spec.transform, spec.default, config_name
             )
         except (ValueError, TypeError, AttributeError):
-            logger.warning("Invalid value for %s, using default", config_name)
+            logger.warning(
+                "Invalid value for %s in environment, trying next source", config_name
+            )
 
     # Then check user config
     if spec.key in user_config:
