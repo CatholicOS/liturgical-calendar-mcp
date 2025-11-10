@@ -36,7 +36,7 @@ CONFIG_FILE_YAML = Path(__file__).resolve().parent / "litcal.config.yaml"
 CONFIG_FILE_YML = Path(__file__).resolve().parent / "litcal.config.yml"
 
 
-def get_config_file() -> Optional[Path]:
+def _get_config_file() -> Optional[Path]:
     """
     Return the user configuration file path if it exists, otherwise None.
     """
@@ -47,9 +47,12 @@ def get_config_file() -> Optional[Path]:
     return None
 
 
-def load_user_config(user_config_file: Optional[Path] = None) -> Dict[str, Any]:
+def _load_user_config(user_config_file: Optional[Path] = None) -> Dict[str, Any]:
     """
-    Load user configuration from litcal.config.yaml (or litcal.config.yml) if it exists.
+    Load user configuration from a YAML file if it exists.
+
+    Args:
+        user_config_file: Path to the user configuration file. If None, no config is loaded.
 
     Returns:
         Dict containing user configuration, or empty dict if file doesn't exist.
@@ -130,11 +133,10 @@ def _apply_transform(
         return default
 
 
-def get_config_value(  # pylint: disable=too-many-arguments
+def _get_config_value(  # pylint: disable=too-many-arguments
     key: str,
     default: Any,
     user_config: Dict[str, Any],
-    *,
     env_var: Optional[str] = None,
     value_type: type = str,
     transform: Optional[Callable[[Any], Any]] = None,
@@ -151,7 +153,7 @@ def get_config_value(  # pylint: disable=too-many-arguments
         transform: Optional callback to transform the value before returning
 
     Returns:
-        The configuration value with priority: env_var > user_config > default
+        The configuration value with priority ***env_var*** > ***user_config*** > ***default***
     """
     config_name = env_var or key
 
@@ -175,8 +177,8 @@ def get_config_value(  # pylint: disable=too-many-arguments
 
 
 # Load user configuration once at module import
-config_file = get_config_file()
-_user_config = load_user_config(config_file)
+config_file = _get_config_file()
+_user_config = _load_user_config(config_file)
 
 
 def _resolve_relative_path(path: Path) -> Path:
@@ -187,7 +189,7 @@ def _resolve_relative_path(path: Path) -> Path:
         path: The path to resolve
 
     Returns:
-        Absolute path (resolved relative to config.py's directory if originally relative)
+        Absolute path (resolved relative to `config.py`'s directory if originally relative)
     """
     if not path.is_absolute():
         return Path(__file__).resolve().parent / path
@@ -217,7 +219,7 @@ def _validate_positive_integer(value: int, default: int) -> int:
 
 
 # Base URL for the Liturgical Calendar API
-API_BASE_URL = get_config_value(
+API_BASE_URL = _get_config_value(
     key="api_base_url",
     default=DEFAULT_API_BASE_URL,
     user_config=_user_config,
@@ -226,7 +228,7 @@ API_BASE_URL = get_config_value(
 )
 
 # Default timeout for API requests (in seconds)
-DEFAULT_TIMEOUT = get_config_value(
+DEFAULT_TIMEOUT = _get_config_value(
     key="default_timeout",
     default=DEFAULT_DEFAULT_TIMEOUT,
     user_config=_user_config,
@@ -240,7 +242,7 @@ DEFAULT_TIMEOUT = get_config_value(
 # =============================================================================
 
 # Cache expiry time for metadata (in hours)
-METADATA_CACHE_EXPIRY_HOURS = get_config_value(
+METADATA_CACHE_EXPIRY_HOURS = _get_config_value(
     key="metadata_cache_expiry_hours",
     default=DEFAULT_METADATA_CACHE_EXPIRY_HOURS,
     user_config=_user_config,
@@ -252,7 +254,7 @@ METADATA_CACHE_EXPIRY_HOURS = get_config_value(
 )
 
 # Cache expiry time for calendar data (in hours)
-CALENDAR_CACHE_EXPIRY_HOURS = get_config_value(
+CALENDAR_CACHE_EXPIRY_HOURS = _get_config_value(
     key="calendar_cache_expiry_hours",
     default=DEFAULT_CALENDAR_CACHE_EXPIRY_HOURS,
     user_config=_user_config,
@@ -264,7 +266,7 @@ CALENDAR_CACHE_EXPIRY_HOURS = get_config_value(
 )
 
 # Cache directory path (supports both absolute and relative paths)
-CACHE_DIR = get_config_value(
+CACHE_DIR = _get_config_value(
     key="cache_dir",
     default=DEFAULT_CACHE_DIR,
     user_config=_user_config,
