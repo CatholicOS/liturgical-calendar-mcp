@@ -3,7 +3,7 @@ Configuration loader for the Liturgical Calendar MCP Server.
 
 This module loads configuration from multiple sources in order of priority:
 1. Environment variables (highest priority)
-2. User configuration file (litcal.config.yaml)
+2. User configuration file (litcal.config.yaml or litcal.config.yml)
 3. Default settings from settings.py (lowest priority)
 
 Users can customize settings by creating a litcal.config.yaml file in the
@@ -29,38 +29,50 @@ from settings import (
     CACHE_DIR as DEFAULT_CACHE_DIR,
 )
 
-# User configuration file path
-CONFIG_FILE = Path(__file__).resolve().parent / "litcal.config.yaml"
-
 logger = logging.getLogger("litcal.config")
 
+# User configuration file path
+CONFIG_FILE_YAML = Path(__file__).resolve().parent / "litcal.config.yaml"
+CONFIG_FILE_YML = Path(__file__).resolve().parent / "litcal.config.yml"
 
-def load_user_config() -> Dict[str, Any]:
+
+def get_config_file() -> Optional[Path]:
     """
-    Load user configuration from litcal.config.yaml if it exists.
+    Return the user configuration file path if it exists, otherwise None.
+    """
+    if CONFIG_FILE_YAML.exists():
+        return CONFIG_FILE_YAML
+    if CONFIG_FILE_YML.exists():
+        return CONFIG_FILE_YML
+    return None
+
+
+def load_user_config(user_config_file: Optional[Path] = None) -> Dict[str, Any]:
+    """
+    Load user configuration from litcal.config.yaml (or litcal.config.yml) if it exists.
 
     Returns:
         Dict containing user configuration, or empty dict if file doesn't exist.
     """
-    if not CONFIG_FILE.exists():
+    if user_config_file is None or not user_config_file.exists():
         return {}
 
     if yaml is None:
-        logger.warning("PyYAML is not installed. Cannot load %s", CONFIG_FILE)
+        logger.warning("PyYAML is not installed. Cannot load %s", user_config_file)
         logger.info("Install with: pip install pyyaml")
         return {}
 
     try:
-        with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+        with open(user_config_file, "r", encoding="utf-8") as f:
             config = yaml.safe_load(f)
             return config if isinstance(config, dict) else {}
     except yaml.YAMLError as e:
         # Log warning but don't fail - use defaults
-        logger.warning("Could not parse %s: %s", CONFIG_FILE, e)
+        logger.warning("Could not parse %s: %s", user_config_file, e)
         return {}
     except OSError as e:
         # Log warning but don't fail - use defaults
-        logger.warning("Could not read %s: %s", CONFIG_FILE, e)
+        logger.warning("Could not read %s: %s", user_config_file, e)
         return {}
 
 
@@ -163,7 +175,8 @@ def get_config_value(  # pylint: disable=too-many-arguments
 
 
 # Load user configuration once at module import
-_user_config = load_user_config()
+config_file = get_config_file()
+_user_config = load_user_config(config_file)
 
 
 def _resolve_relative_path(path: Path) -> Path:
@@ -279,8 +292,8 @@ def print_config_summary() -> None:
     print(f"  CALENDAR_CACHE_EXPIRY_HOURS: {CALENDAR_CACHE_EXPIRY_HOURS}h")
     print(f"  CACHE_DIR: {CACHE_DIR}")
     print("\nConfiguration Sources:")
-    if CONFIG_FILE.exists():
-        print(f"  User config loaded from: {CONFIG_FILE}")
+    if config_file.exists():
+        print(f"  User config loaded from: {config_file}")
     else:
         print("  User config: Not found (using defaults)")
     print("  Defaults from: settings.py")
