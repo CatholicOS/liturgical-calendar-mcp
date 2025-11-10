@@ -81,7 +81,6 @@ def calculate_year_cycles(year: int) -> dict:
     }
 
 
-
 async def fetch_calendar_data(
     request: CalendarFetchRequest,
     calendar_cache: CalendarDataCache,

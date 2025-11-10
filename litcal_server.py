@@ -24,7 +24,11 @@ from validators import (
     validate_diocese,
     validate_calendar_id,
 )
-from utils import filter_celebrations_by_date, fetch_calendar_data, mark_particular_celebrations
+from utils import (
+    filter_celebrations_by_date,
+    fetch_calendar_data,
+    mark_particular_celebrations,
+)
 from models import CalendarFetchRequest
 
 # Create logger as a child of the main litcal logger
@@ -139,7 +143,9 @@ async def get_national_calendar(
             target_locale=locale,
             year_type=YearType.LITURGICAL,
         )
-        national_data = await fetch_calendar_data(national_request, calendar_cache, http_client)
+        national_data = await fetch_calendar_data(
+            national_request, calendar_cache, http_client
+        )
 
         # Fetch general calendar for comparison to identify particular celebrations
         general_request = CalendarFetchRequest(
@@ -149,7 +155,9 @@ async def get_national_calendar(
             target_locale=locale,
             year_type=YearType.LITURGICAL,
         )
-        general_data = await fetch_calendar_data(general_request, calendar_cache, http_client)
+        general_data = await fetch_calendar_data(
+            general_request, calendar_cache, http_client
+        )
 
         # Mark celebrations that are particular to this national calendar
         enriched_data = mark_particular_celebrations(national_data, general_data)
@@ -208,7 +216,9 @@ async def get_diocesan_calendar(
             target_locale=locale,
             year_type=YearType.LITURGICAL,
         )
-        diocesan_data = await fetch_calendar_data(diocesan_request, calendar_cache, http_client)
+        diocesan_data = await fetch_calendar_data(
+            diocesan_request, calendar_cache, http_client
+        )
 
         # Fetch general calendar for comparison to identify particular celebrations
         general_request = CalendarFetchRequest(
@@ -218,7 +228,9 @@ async def get_diocesan_calendar(
             target_locale=locale,
             year_type=YearType.LITURGICAL,
         )
-        general_data = await fetch_calendar_data(general_request, calendar_cache, http_client)
+        general_data = await fetch_calendar_data(
+            general_request, calendar_cache, http_client
+        )
 
         # Mark celebrations that are particular to this diocesan calendar
         enriched_data = mark_particular_celebrations(diocesan_data, general_data)
