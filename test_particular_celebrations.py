@@ -34,7 +34,7 @@ async def test_national_calendar(nation: str, year: int = 2024):
                 if "## Celebrations particular to this calendar" in line:
                     in_particular_section = True
                     continue
-                elif in_particular_section:
+                if in_particular_section:
                     if line.startswith("==="):
                         break
                     if line.startswith("📅"):
