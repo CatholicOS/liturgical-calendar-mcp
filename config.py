@@ -124,7 +124,7 @@ def _apply_transform(
 
     try:
         return transform(value)
-    except Exception as e:  # pylint: disable=broad-exception-caught
+    except (ValueError, TypeError, AttributeError) as e:
         # Intentionally catch all exceptions to ensure config loading never fails
         logger.warning("Transform failed for %s: %s, using default", config_name, e)
         return default
@@ -292,7 +292,7 @@ def print_config_summary() -> None:
     print(f"  CALENDAR_CACHE_EXPIRY_HOURS: {CALENDAR_CACHE_EXPIRY_HOURS}h")
     print(f"  CACHE_DIR: {CACHE_DIR}")
     print("\nConfiguration Sources:")
-    if config_file.exists():
+    if config_file is not None and config_file.exists():
         print(f"  User config loaded from: {config_file}")
     else:
         print("  User config: Not found (using defaults)")
