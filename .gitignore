@@ -91,3 +91,7 @@ Desktop.ini
 # Other
 *.log
 cache/
+
+# User configuration (do not commit)
+litcal.config.yaml
+litcal.config.yml

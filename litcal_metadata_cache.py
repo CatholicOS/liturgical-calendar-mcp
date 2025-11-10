@@ -7,11 +7,8 @@ from typing import ClassVar, Optional, Dict, Set, List, TypedDict
 from datetime import datetime, timedelta
 import httpx
 from enums import CalendarType
+from config import METADATA_CACHE_EXPIRY_HOURS, API_BASE_URL, DEFAULT_TIMEOUT
 
-# === CONFIGURATION ===
-CACHE_EXPIRY_HOURS = 24
-API_BASE_URL = "https://litcal.johnromanodorazio.com/api/dev"
-DEFAULT_TIMEOUT = 30
 
 # Create logger as a child of the main litcal logger
 logger = logging.getLogger("litcal.metadata")
@@ -35,7 +32,7 @@ class CalendarMetadataCache:
     _general_locales: ClassVar[Set[str]] = set()
     _calendar_locales: ClassVar[Dict[str, Set[str]]] = {}
     _api_base_url: ClassVar[str] = API_BASE_URL
-    _cache_expiry_hours: ClassVar[int] = CACHE_EXPIRY_HOURS
+    _cache_expiry_hours: ClassVar[int] = METADATA_CACHE_EXPIRY_HOURS
 
     def __new__(cls):
         raise RuntimeError(
@@ -47,7 +44,7 @@ class CalendarMetadataCache:
         cls,
         http_client: httpx.AsyncClient | None = None,
         api_base_url: str = API_BASE_URL,
-        cache_expiry_hours: int = CACHE_EXPIRY_HOURS,
+        cache_expiry_hours: int = METADATA_CACHE_EXPIRY_HOURS,
     ) -> bool:
         """
         Ensure metadata cache is loaded and fresh.
@@ -103,7 +100,7 @@ class CalendarMetadataCache:
             logger.info("Setting custom API base URL: %s", api_base_url)
         cls._api_base_url = api_base_url
 
-        if cache_expiry_hours != CACHE_EXPIRY_HOURS:
+        if cache_expiry_hours != METADATA_CACHE_EXPIRY_HOURS:
             logger.info("Setting custom cache expiry hours: %s", cache_expiry_hours)
         cls._cache_expiry_hours = cache_expiry_hours
 

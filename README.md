@@ -121,6 +121,72 @@ You should now see the "Liturgical Calendar" tool in the tools list under `MCP_D
 If you want to run the MCP server locally and integrate it with Claude Desktop or VS Code without the Docker MCP Toolkit,
 see [CLAUDE_VSCODE_INSTALL.md](./CLAUDE_VSCODE_INSTALL.md) for step-by-step instructions.
 
+## Configuration
+
+The MCP server can be customized through a user configuration file.
+This allows you to adjust API endpoints, cache settings, and more without modifying the codebase.
+
+### Creating Your Configuration
+
+1. Copy the example configuration file:
+
+   ```bash
+   cp litcal.config.example.yaml litcal.config.yaml
+   ```
+
+2. Edit `litcal.config.yaml` with your preferred settings:
+
+   ```yaml
+   # API Configuration
+   api_base_url: "https://litcal.johnromanodorazio.com/api/dev"
+   default_timeout: 30
+
+   # Cache Configuration
+   metadata_cache_expiry_hours: 24
+   calendar_cache_expiry_hours: 168
+   cache_dir: "./cache"
+   ```
+
+3. Your `litcal.config.yaml` file is automatically ignored by git and will not be committed.
+
+### Configuration Options
+
+#### API Settings
+
+- **`api_base_url`** - Base URL for the Liturgical Calendar API (default: `https://litcal.johnromanodorazio.com/api/dev`)
+- **`default_timeout`** - Timeout for API requests in seconds (default: `30`)
+
+#### Cache Settings
+
+- **`metadata_cache_expiry_hours`** - How long to cache the list of available calendars (default: `24` hours)
+- **`calendar_cache_expiry_hours`** - How long to cache liturgical calendar data (default: `168` hours / 1 week)
+- **`cache_dir`** - Directory for cache files, absolute or relative to project root (default: `./cache`)
+
+### Environment Variables
+
+You can also override any configuration setting using environment variables (highest priority):
+
+- `LITCAL_API_BASE_URL`
+- `LITCAL_DEFAULT_TIMEOUT`
+- `LITCAL_METADATA_CACHE_EXPIRY_HOURS`
+- `LITCAL_CALENDAR_CACHE_EXPIRY_HOURS`
+- `LITCAL_CACHE_DIR`
+
+Example:
+
+```bash
+export LITCAL_DEFAULT_TIMEOUT=60
+python litcal_server.py
+```
+
+### Configuration Priority
+
+Settings are loaded in the following order (highest priority first):
+
+1. Environment variables
+2. User configuration file (`litcal.config.yaml`)
+3. Default settings (`settings.py`)
+
 ## Usage Examples
 
 In Claude Desktop, you can ask:

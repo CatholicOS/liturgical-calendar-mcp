@@ -2,3 +2,4 @@ mcp[cli]>=1.2.0
 httpx[http2]
 pycountry
 inflect
+pyyaml
