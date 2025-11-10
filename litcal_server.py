@@ -301,6 +301,10 @@ async def get_liturgy_of_the_day(
     - Liturgy for a specific date in US: date='2024-12-25', calendar_type='NATIONAL', calendar_id='US', locale='en_US'
     - Liturgy for a specific date in Rome diocese: date='2024-06-29', calendar_type='DIOCESAN', calendar_id='romamo_it', locale='it_IT'
     - Today's liturgy in the calendar for Canada in French: date='', calendar_type='NATIONAL', calendar_id='CA', locale='fr_CA'
+
+    Important: When presenting the readings to the user, do not summarize them. Output them in a readable format,
+    maintaining the original structure and the title for each reading. If there is a pipe character (|),
+    it should be interpreted as an alternative reading.
     """
 
     try:
@@ -345,6 +349,14 @@ async def get_liturgy_of_the_day(
         logger.exception("Error")
         return f"❌ Error: {str(e)}"
     except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            logger.error(
+                "Calendar not found for type %s, id %s, year %s",
+                calendar_type_case.value,
+                calendar_id,
+                target_date.year,
+            )
+            return f"❌ Calendar not found for {calendar_type_case.value} calendar"
         logger.exception("HTTP error fetching liturgy")
         return f"❌ HTTP error: {e.response.status_code} - {e.response.text}"
     except httpx.RequestError as e:
