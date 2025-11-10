@@ -14,6 +14,8 @@ import os
 import logging
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
+from dataclasses import dataclass
+from urllib.parse import urlparse
 
 try:
     import yaml
@@ -34,6 +36,17 @@ logger = logging.getLogger("litcal.config")
 # User configuration file path
 CONFIG_FILE_YAML = Path(__file__).resolve().parent / "litcal.config.yaml"
 CONFIG_FILE_YML = Path(__file__).resolve().parent / "litcal.config.yml"
+
+
+@dataclass
+class ConfigSpec:
+    """Specification for loading a configuration value."""
+
+    key: str
+    default: Any
+    env_var: Optional[str] = None
+    value_type: type = str
+    transform: Optional[Callable[[Any], Any]] = None
 
 
 def _get_config_file() -> Optional[Path]:
@@ -133,52 +146,47 @@ def _apply_transform(
         return default
 
 
-def _get_config_value(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-    key: str,
-    default: Any,
+def _get_config_value(
+    spec: ConfigSpec,
     user_config: Dict[str, Any],
-    env_var: Optional[str] = None,
-    value_type: type = str,
-    transform: Optional[Callable[[Any], Any]] = None,
 ) -> Any:
     """
     Get a configuration value from environment, user config, or default.
 
     Args:
-        key: The configuration key to look up
-        default: The default value to use
+        spec: Configuration specification
         user_config: Dictionary of user configuration
-        env_var: Environment variable name to check (optional)
-        value_type: Type to convert the value to
-        transform: Optional callback to transform the value before returning
 
     Returns:
         The configuration value with priority ***env_var*** > ***user_config*** > ***default***
     """
-    config_name = env_var or key
+    config_name = spec.env_var or spec.key
 
     # First check environment variable
-    if env_var and env_var in os.environ:
+    if spec.env_var and spec.env_var in os.environ:
         try:
-            converted = _convert_type(os.environ[env_var], value_type)
-            return _apply_transform(converted, transform, default, config_name)
-        except (ValueError, TypeError):
+            converted = _convert_type(os.environ[spec.env_var], spec.value_type)
+            return _apply_transform(
+                converted, spec.transform, spec.default, config_name
+            )
+        except (ValueError, TypeError, AttributeError):
             logger.warning("Invalid value for %s, using default", config_name)
 
     # Then check user config
-    if key in user_config:
-        value = user_config[key]
-        if value_type is Path and isinstance(value, str):
-            value = Path(value)
-        return _apply_transform(value, transform, default, config_name)
+    if spec.key in user_config:
+        value = user_config[spec.key]
+        if not isinstance(value, spec.value_type):
+            try:
+                value = _convert_type(str(value), spec.value_type)
+            except (ValueError, TypeError, AttributeError):
+                logger.warning(
+                    "Invalid value for %s in config, using default", config_name
+                )
+                return spec.default
+        return _apply_transform(value, spec.transform, spec.default, config_name)
 
     # Finally use default
-    return default
-
-
-# Load user configuration once at module import
-config_file = _get_config_file()
-_user_config = _load_user_config(config_file)
+    return spec.default
 
 
 def _resolve_relative_path(path: Path) -> Path:
@@ -196,13 +204,16 @@ def _resolve_relative_path(path: Path) -> Path:
     return path
 
 
-def _validate_positive_integer(value: int, default: int) -> int:
+def _validate_positive_integer(
+    value: int, default: int, max_value: Optional[int] = None
+) -> int:
     """
-    Ensure value is positive.
+    Ensure value is positive and does not exceed a maximum value.
 
     Args:
         value: The value to validate
         default: The default value to return if validation fails
+        max_value: Optional maximum value to allow
 
     Returns:
         The value if positive, otherwise the default
@@ -210,31 +221,68 @@ def _validate_positive_integer(value: int, default: int) -> int:
     if value <= 0:
         logger.warning("Invalid value %d, using default %d", value, default)
         return default
+    if max_value is not None and value > max_value:
+        logger.warning(
+            "Value %d exceeds maximum %d, using default %d", value, max_value, default
+        )
+        return default
     return value
 
+
+def _validate_url(value: str, default: str) -> str:
+    """
+    Ensure value is a valid URL.
+
+    Args:
+        value: The URL to validate
+        default: The default value to return if validation fails
+
+    Returns:
+        The value if valid URL, otherwise the default
+    """
+    try:
+        result = urlparse(value)
+        if not all([result.scheme, result.netloc]):
+            logger.warning("Invalid URL %s, using default %s", value, default)
+            return default
+        return value
+    except ValueError as e:
+        logger.warning("URL validation failed for %s: %s, using default", value, e)
+        return default
+
+
+# Load user configuration once at module import
+_config_file: Optional[Path] = _get_config_file()
+_user_config: Dict[str, Any] = _load_user_config(_config_file)
 
 # =============================================================================
 # API Configuration
 # =============================================================================
 
-
 # Base URL for the Liturgical Calendar API
 API_BASE_URL = _get_config_value(
-    key="api_base_url",
-    default=DEFAULT_API_BASE_URL,
-    user_config=_user_config,
-    env_var="LITCAL_API_BASE_URL",
-    value_type=str,
+    ConfigSpec(
+        key="api_base_url",
+        default=DEFAULT_API_BASE_URL,
+        env_var="LITCAL_API_BASE_URL",
+        value_type=str,
+        transform=lambda v: _validate_url(v, DEFAULT_API_BASE_URL),
+    ),
+    _user_config,
 )
 
 # Default timeout for API requests (in seconds)
 DEFAULT_TIMEOUT = _get_config_value(
-    key="default_timeout",
-    default=DEFAULT_DEFAULT_TIMEOUT,
-    user_config=_user_config,
-    env_var="LITCAL_DEFAULT_TIMEOUT",
-    value_type=int,
-    transform=lambda v: _validate_positive_integer(v, DEFAULT_DEFAULT_TIMEOUT),
+    ConfigSpec(
+        key="default_timeout",
+        default=DEFAULT_DEFAULT_TIMEOUT,
+        env_var="LITCAL_DEFAULT_TIMEOUT",
+        value_type=int,
+        transform=lambda v: _validate_positive_integer(
+            v, DEFAULT_DEFAULT_TIMEOUT, max_value=300
+        ),
+    ),
+    _user_config,
 )
 
 # =============================================================================
@@ -243,36 +291,42 @@ DEFAULT_TIMEOUT = _get_config_value(
 
 # Cache expiry time for metadata (in hours)
 METADATA_CACHE_EXPIRY_HOURS = _get_config_value(
-    key="metadata_cache_expiry_hours",
-    default=DEFAULT_METADATA_CACHE_EXPIRY_HOURS,
-    user_config=_user_config,
-    env_var="LITCAL_METADATA_CACHE_EXPIRY_HOURS",
-    value_type=int,
-    transform=lambda v: _validate_positive_integer(
-        v, DEFAULT_METADATA_CACHE_EXPIRY_HOURS
+    ConfigSpec(
+        key="metadata_cache_expiry_hours",
+        default=DEFAULT_METADATA_CACHE_EXPIRY_HOURS,
+        env_var="LITCAL_METADATA_CACHE_EXPIRY_HOURS",
+        value_type=int,
+        transform=lambda v: _validate_positive_integer(
+            v, DEFAULT_METADATA_CACHE_EXPIRY_HOURS, max_value=720
+        ),
     ),
+    _user_config,
 )
 
 # Cache expiry time for calendar data (in hours)
 CALENDAR_CACHE_EXPIRY_HOURS = _get_config_value(
-    key="calendar_cache_expiry_hours",
-    default=DEFAULT_CALENDAR_CACHE_EXPIRY_HOURS,
-    user_config=_user_config,
-    env_var="LITCAL_CALENDAR_CACHE_EXPIRY_HOURS",
-    value_type=int,
-    transform=lambda v: _validate_positive_integer(
-        v, DEFAULT_CALENDAR_CACHE_EXPIRY_HOURS
+    ConfigSpec(
+        key="calendar_cache_expiry_hours",
+        default=DEFAULT_CALENDAR_CACHE_EXPIRY_HOURS,
+        env_var="LITCAL_CALENDAR_CACHE_EXPIRY_HOURS",
+        value_type=int,
+        transform=lambda v: _validate_positive_integer(
+            v, DEFAULT_CALENDAR_CACHE_EXPIRY_HOURS, max_value=720
+        ),
     ),
+    _user_config,
 )
 
 # Cache directory path (supports both absolute and relative paths)
 CACHE_DIR = _get_config_value(
-    key="cache_dir",
-    default=DEFAULT_CACHE_DIR,
-    user_config=_user_config,
-    env_var="LITCAL_CACHE_DIR",
-    value_type=Path,
-    transform=_resolve_relative_path,
+    ConfigSpec(
+        key="cache_dir",
+        default=DEFAULT_CACHE_DIR,
+        env_var="LITCAL_CACHE_DIR",
+        value_type=Path,
+        transform=_resolve_relative_path,
+    ),
+    _user_config,
 )
 
 
@@ -294,8 +348,8 @@ def print_config_summary() -> None:
     print(f"  CALENDAR_CACHE_EXPIRY_HOURS: {CALENDAR_CACHE_EXPIRY_HOURS}h")
     print(f"  CACHE_DIR: {CACHE_DIR}")
     print("\nConfiguration Sources:")
-    if config_file is not None and config_file.exists():
-        print(f"  User config loaded from: {config_file}")
+    if _config_file is not None and _config_file.exists():
+        print(f"  User config loaded from: {_config_file}")
     else:
         print("  User config: Not found (using defaults)")
     print("  Defaults from: settings.py")
