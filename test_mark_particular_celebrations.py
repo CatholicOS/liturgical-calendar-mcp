@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Unit test for mark_particular_celebrations function."""
 
 from utils import mark_particular_celebrations
@@ -10,10 +9,10 @@ def test_mark_particular_celebrations():
     # Mock General Roman Calendar data
     general_calendar = {
         "litcal": [
-            {"event_key": "Easter", "name": "Easter Sunday"},
-            {"event_key": "Christmas", "name": "The Nativity of the Lord"},
-            {"event_key": "AllSaints", "name": "All Saints' Day"},
-            {"event_key": "Pentecost", "name": "Pentecost Sunday"},
+            {"event_key": "Easter", "name": "Easter Sunday", "grade": 7},
+            {"event_key": "Christmas", "name": "The Nativity of the Lord", "grade": 7},
+            {"event_key": "AllSaints", "name": "All Saints' Day", "grade": 6},
+            {"event_key": "Pentecost", "name": "Pentecost Sunday", "grade": 6},
         ]
     }
 
@@ -21,22 +20,30 @@ def test_mark_particular_celebrations():
     # Note: USA has some events with square brackets, some without
     national_calendar_usa = {
         "litcal": [
-            {"event_key": "Easter", "name": "Easter Sunday"},  # In general calendar
+            {
+                "event_key": "Easter",
+                "name": "Easter Sunday",
+                "grade": 7,
+            },  # In general calendar
             {
                 "event_key": "Christmas",
                 "name": "The Nativity of the Lord",
+                "grade": 7,
             },  # In general calendar
             {
                 "event_key": "ImmaculateConceptionUSA",
                 "name": "Immaculate Conception",
+                "grade": 6,
             },  # Particular to USA
             {
                 "event_key": "StPatrick",
                 "name": "[ USA ] Saint Patrick",
+                "grade": 3,
             },  # Particular with brackets
             {
                 "event_key": "OurLadyOfGuadalupe",
                 "name": "Our Lady of Guadalupe",
+                "grade": 4,
             },  # Particular without brackets
         ]
     }
@@ -45,18 +52,25 @@ def test_mark_particular_celebrations():
     # Note: Italy doesn't use square brackets for particular celebrations
     national_calendar_italy = {
         "litcal": [
-            {"event_key": "Easter", "name": "Easter Sunday"},  # In general calendar
+            {
+                "event_key": "Easter",
+                "name": "Easter Sunday",
+                "grade": 7,
+            },  # In general calendar
             {
                 "event_key": "AllSaints",
                 "name": "All Saints' Day",
+                "grade": 6,
             },  # In general calendar
             {
                 "event_key": "StFrancisOfAssisi",
                 "name": "San Francesco d'Assisi",
+                "grade": 4,
             },  # Particular, no brackets
             {
                 "event_key": "StCatherineOfSiena",
                 "name": "Santa Caterina da Siena, Patrona d'Italia",
+                "grade": 4,
             },  # Particular, modified name
         ]
     }

@@ -147,6 +147,10 @@ async def get_national_calendar(
             national_request, calendar_cache, http_client
         )
 
+        # Check if national calendar data was successfully fetched
+        if national_data is None:
+            return f"❌ Failed to fetch national calendar for {nation_id}"
+
         # Fetch general calendar for comparison to identify particular celebrations
         general_request = CalendarFetchRequest(
             calendar_type=CalendarType.GENERAL_ROMAN,
@@ -158,6 +162,15 @@ async def get_national_calendar(
         general_data = await fetch_calendar_data(
             general_request, calendar_cache, http_client
         )
+
+        # Check if general calendar data was successfully fetched
+        if general_data is None:
+            logger.warning(
+                "Failed to fetch General Roman Calendar for comparison; "
+                "particular celebrations will not be marked"
+            )
+            # Return national calendar without particular celebrations marked
+            return format_calendar_summary(national_data)
 
         # Mark celebrations that are particular to this national calendar
         enriched_data = mark_particular_celebrations(national_data, general_data)
@@ -220,6 +233,10 @@ async def get_diocesan_calendar(
             diocesan_request, calendar_cache, http_client
         )
 
+        # Check if diocesan calendar data was successfully fetched
+        if diocesan_data is None:
+            return f"❌ Failed to fetch diocesan calendar for {diocese_id}"
+
         # Fetch general calendar for comparison to identify particular celebrations
         general_request = CalendarFetchRequest(
             calendar_type=CalendarType.GENERAL_ROMAN,
@@ -231,6 +248,15 @@ async def get_diocesan_calendar(
         general_data = await fetch_calendar_data(
             general_request, calendar_cache, http_client
         )
+
+        # Check if general calendar data was successfully fetched
+        if general_data is None:
+            logger.warning(
+                "Failed to fetch General Roman Calendar for comparison; "
+                "particular celebrations will not be marked"
+            )
+            # Return diocesan calendar without particular celebrations marked
+            return format_calendar_summary(diocesan_data)
 
         # Mark celebrations that are particular to this diocesan calendar
         enriched_data = mark_particular_celebrations(diocesan_data, general_data)

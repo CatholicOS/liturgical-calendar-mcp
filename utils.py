@@ -2,6 +2,7 @@
 Utility functions for the MCP tools.
 """
 
+import copy
 import locale
 import logging
 from datetime import datetime, timezone
@@ -148,16 +149,24 @@ def mark_particular_celebrations(
 
     This function identifies celebrations that are unique to a national or diocesan
     calendar by comparing event_keys with the General Roman Calendar. Events that
-    don't exist in the general calendar (or vigil masses of such events) are marked
-    as particular celebrations.
+    don't exist in the general calendar are marked as particular celebrations.
+
+    Weekday liturgical events (grade=0) are excluded from being marked as particular
+    since they represent minor differences that clutter the results.
+
+    The function creates a deep copy of the input calendar_data to avoid mutating
+    cached data, ensuring thread safety and cache integrity.
 
     Args:
-        calendar_data: The national or diocesan calendar data
+        calendar_data: The national or diocesan calendar data (will not be modified)
         general_calendar_data: The General Roman Calendar data for the same year
 
     Returns:
-        The calendar_data with an 'is_particular' field added to each event
+        A new copy of calendar_data with an 'is_particular' field added to each event
     """
+    # Deep copy to avoid mutating cached data
+    result = copy.deepcopy(calendar_data)
+
     # Build a set of event_keys from the general calendar for fast lookup
     general_event_keys = {
         event.get("event_key")
@@ -166,8 +175,15 @@ def mark_particular_celebrations(
     }
 
     # Mark each event in the particular calendar
-    for event in calendar_data.get("litcal", []):
+    for event in result.get("litcal", []):
         event_key = event.get("event_key", "")
+        grade = event.get("grade", 0)
+
+        # Skip weekday liturgical events (grade=0) as they are not significant
+        # enough to be considered "particular celebrations"
+        if grade == 0:
+            event["is_particular"] = False
+            continue
 
         # An event is particular if its event_key is not in the general calendar
         # We exclude the vigil mass check here because vigil masses of particular
@@ -177,4 +193,4 @@ def mark_particular_celebrations(
         # Add the marker field
         event["is_particular"] = is_particular
 
-    return calendar_data
+    return result
