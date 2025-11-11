@@ -45,6 +45,11 @@ def test_mark_particular_celebrations():
                 "name": "Our Lady of Guadalupe",
                 "grade": 4,
             },  # Particular without brackets
+            {
+                "event_key": "ChristmasWeekdayUSA",
+                "name": "December 26 - Weekday after Christmas",
+                "grade": 0,
+            },  # Weekday - should NOT be marked as particular despite being unique
         ]
     }
 
@@ -100,6 +105,9 @@ def test_mark_particular_celebrations():
     assert (
         result_usa["litcal"][4]["is_particular"] is True
     ), "Our Lady of Guadalupe should be particular"
+    assert (
+        result_usa["litcal"][5]["is_particular"] is False
+    ), "Weekday events (grade=0) should not be marked as particular even if unique to calendar"
 
     print("\n✅ USA calendar: All assertions passed!")
 
@@ -137,6 +145,9 @@ def test_mark_particular_celebrations():
     print("1. Comparing event_key values with the General Roman Calendar")
     print("2. Works regardless of whether names have square brackets")
     print("3. Handles both USA (with brackets) and Italy (without brackets)")
+    print(
+        "4. Correctly filters out weekday events (grade=0) from particular celebrations"
+    )
 
 
 if __name__ == "__main__":
