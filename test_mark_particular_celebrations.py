@@ -13,6 +13,11 @@ def test_mark_particular_celebrations():
             {"event_key": "Christmas", "name": "The Nativity of the Lord", "grade": 7},
             {"event_key": "AllSaints", "name": "All Saints' Day", "grade": 6},
             {"event_key": "Pentecost", "name": "Pentecost Sunday", "grade": 6},
+            {
+                "event_key": "ImmaculateConception",
+                "name": "Immaculate Conception of the Blessed Virgin Mary",
+                "grade": 6,
+            },
         ]
     }
 
@@ -31,10 +36,10 @@ def test_mark_particular_celebrations():
                 "grade": 7,
             },  # In general calendar
             {
-                "event_key": "ImmaculateConceptionUSA",
-                "name": "Immaculate Conception",
+                "event_key": "ImmaculateConception",
+                "name": "Immaculate Conception [USA - Patronal Feast]",
                 "grade": 6,
-            },  # Particular to USA
+            },  # Same event_key as general, but marked particular by brackets
             {
                 "event_key": "StPatrick",
                 "name": "[ USA ] Saint Patrick",
@@ -98,7 +103,7 @@ def test_mark_particular_celebrations():
     ), "Christmas should not be particular"
     assert (
         result_usa["litcal"][2]["is_particular"] is True
-    ), "Immaculate Conception USA should be particular"
+    ), "Immaculate Conception with brackets should be particular despite same event_key"
     assert (
         result_usa["litcal"][3]["is_particular"] is True
     ), "St Patrick USA should be particular"
@@ -141,12 +146,13 @@ def test_mark_particular_celebrations():
     print("\n" + "=" * 60)
     print("🎉 ALL TESTS PASSED!")
     print("=" * 60)
-    print("\nThe fix successfully identifies particular celebrations by:")
+    print("\nThe hybrid approach successfully identifies particular celebrations by:")
     print("1. Comparing event_key values with the General Roman Calendar")
-    print("2. Works regardless of whether names have square brackets")
-    print("3. Handles both USA (with brackets) and Italy (without brackets)")
+    print("2. Detecting square brackets in event names (e.g., [USA], [Diocese])")
+    print("3. Marking as particular if EITHER condition is true")
+    print("4. Handles both USA (with brackets) and Italy (without brackets)")
     print(
-        "4. Correctly filters out weekday events (grade=0) from particular celebrations"
+        "5. Correctly filters out weekday events (grade=0) from particular celebrations"
     )
 
 

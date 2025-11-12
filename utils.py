@@ -5,6 +5,7 @@ Utility functions for the MCP tools.
 import copy
 import locale
 import logging
+import re
 from datetime import datetime, timezone
 from httpx import AsyncClient
 from enums import CalendarType
@@ -147,9 +148,13 @@ def mark_particular_celebrations(
     Mark celebrations that are particular to a specific calendar by comparing
     with the General Roman Calendar.
 
-    This function identifies celebrations that are unique to a national or diocesan
-    calendar by comparing event_keys with the General Roman Calendar. Events that
-    don't exist in the general calendar are marked as particular celebrations.
+    This function uses a hybrid approach to identify particular celebrations:
+    1. Compare event_keys with the General Roman Calendar
+    2. Check if the event name contains square brackets (e.g., [USA], [Diocese])
+
+    An event is marked as particular if EITHER condition is true. This catches both:
+    - Events unique to the calendar (different event_key)
+    - Patronal feasts that share event_keys but have bracketed names
 
     Weekday liturgical events (grade=0) are excluded from being marked as particular
     since they represent minor differences that clutter the results.
@@ -174,9 +179,13 @@ def mark_particular_celebrations(
         if event.get("event_key")
     }
 
+    # Pattern to detect square brackets in event names
+    bracket_pattern = re.compile(r"\[.*\]")
+
     # Mark each event in the particular calendar
     for event in result.get("litcal", []):
         event_key = event.get("event_key", "")
+        event_name = event.get("name", "")
         grade = event.get("grade", 0)
 
         # Skip weekday liturgical events (grade=0) as they are not significant
@@ -185,10 +194,11 @@ def mark_particular_celebrations(
             event["is_particular"] = False
             continue
 
-        # An event is particular if its event_key is not in the general calendar
-        # We exclude the vigil mass check here because vigil masses of particular
-        # celebrations should also be marked as particular
-        is_particular = event_key not in general_event_keys
+        # An event is particular if EITHER:
+        # 1. Its event_key is not in the general calendar, OR
+        # 2. Its name contains square brackets (indicating regional/diocesan variant)
+        has_brackets = bool(bracket_pattern.search(event_name))
+        is_particular = (event_key not in general_event_keys) or has_brackets
 
         # Add the marker field
         event["is_particular"] = is_particular

@@ -113,6 +113,7 @@ async def get_national_calendar(
 ) -> str:
     """
     Retrieve the liturgical calendar for a specific nation and year, and optional locale.
+    List all of the particular celebrations, do not remove any of them.
 
     Parameters:
     - nation: Two-letter country code like 'CA' for Canada or 'US' for United States.
@@ -186,6 +187,7 @@ async def get_diocesan_calendar(
 ) -> str:
     """
     Retrieve the liturgical calendar for a specific diocese and year, and optional locale.
+    List all of the particular celebrations, do not remove any of them.
 
     Parameters:
     - diocese: Diocese ID like 'romamo_it' for Diocese of Rome.
