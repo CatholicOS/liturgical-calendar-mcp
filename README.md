@@ -24,6 +24,24 @@ It supports querying the General Roman Calendar, national calendars, and diocesa
 - **`get_announcement_easter_and_moveable_feasts`** - Retrieve the announcement of Easter and the moveable feasts (aka *Noveritis*)
    as pronounced on Epiphany for a specific year for any supported calendar
 
+### Particular Celebrations Detection
+
+When retrieving national or diocesan calendars, the server automatically identifies and highlights celebrations that are particular (unique) to that calendar:
+
+- **Hybrid Detection Approach**: Events are marked as particular using two methods:
+  1. **Event Key Comparison** - Events whose `event_key` is not found in the General Roman Calendar
+  2. **Square Bracket Detection** - Events with square brackets in their name (e.g., `[USA]`, `[Diocese of Rome]`)
+
+- **Intelligent Filtering**: Weekday events (grade 0) are automatically excluded from particular celebrations, as they represent minor liturgical differences that are not significant enough to highlight
+
+- **Use Cases**:
+  - Identify patron saints specific to a nation or diocese
+  - Discover local feast days and memorials
+  - Compare regional liturgical variations
+  - Plan liturgical celebrations with local context
+
+This feature helps distinguish between universal celebrations (found in the General Roman Calendar) and regional celebrations particular to specific nations or dioceses.
+
 ## Prerequisites
 
 - Docker Desktop with MCP Toolkit enabled
@@ -83,6 +101,8 @@ Edit the file `%USERPROFILE%\.docker\mcp\catalogs\docker-mcp.yaml`, and paste th
       - name: get_national_calendar
       - name: get_diocesan_calendar
       - name: list_available_calendars
+      - name: get_liturgy_of_the_day
+      - name: get_announcement_easter_and_moveable_feasts
     metadata:
       category: integration
       tags:
@@ -195,6 +215,8 @@ In Claude Desktop, you can ask:
 - "Show me the liturgical calendar for the United States in 2024"
 - "What is the calendar for the Diocese of Rome for this year?"
 - "What liturgical events are celebrated in Canada?"
+- "What are the particular celebrations for Italy this year?"
+- "Show me the patron saints and local feasts for the Diocese of Boston"
 - "Get the liturgy of the day"
 - "Get the liturgy of the day for the Diocese of Rome"
 - "Get the liturgy of the day for the Diocese of Rome for 2024"
