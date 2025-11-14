@@ -29,7 +29,6 @@ The functions included in this module are:
 - format_calendar_summary(data: dict): Format calendar data into a readable summary
 """
 
-import re
 from datetime import datetime
 import logging
 import locale
@@ -120,10 +119,12 @@ def _format_liturgical_seasons(events: list) -> list:
 
 def _format_particular_celebrations(events: list) -> list:
     """Format celebrations particular to the current calendar, for display."""
+    # Filter for events marked as particular to this calendar
+    # The is_particular field is set by comparing with the General Roman Calendar
     particular_events = [
         e
         for e in events
-        if re.match(r"^\[.*\]", e.get("name", "")) and not e.get("is_vigil_mass", False)
+        if e.get("is_particular", False) and not e.get("is_vigil_mass", False)
     ]
     if particular_events:
         lines = ["## Celebrations particular to this calendar"]
