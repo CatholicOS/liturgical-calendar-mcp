@@ -24,7 +24,11 @@ from validators import (
     validate_diocese,
     validate_calendar_id,
 )
-from utils import filter_celebrations_by_date, fetch_calendar_data
+from utils import (
+    filter_celebrations_by_date,
+    fetch_calendar_data,
+    mark_particular_celebrations,
+)
 from models import CalendarFetchRequest
 
 # Create logger as a child of the main litcal logger
@@ -109,6 +113,7 @@ async def get_national_calendar(
 ) -> str:
     """
     Retrieve the liturgical calendar for a specific nation and year, and optional locale.
+    List all of the particular celebrations, do not remove any of them.
 
     Parameters:
     - nation: Two-letter country code like 'CA' for Canada or 'US' for United States.
@@ -131,18 +136,35 @@ async def get_national_calendar(
             locale,
         )
 
-        # Fetch calendar data using helper function
-        request = CalendarFetchRequest(
+        # Fetch national calendar data using helper function
+        national_request = CalendarFetchRequest(
             calendar_type=CalendarType.NATIONAL,
             calendar_id=nation_id,
             year=year_int,
             target_locale=locale,
             year_type=YearType.LITURGICAL,
         )
-        data = await fetch_calendar_data(request, calendar_cache, http_client)
+        national_data = await fetch_calendar_data(
+            national_request, calendar_cache, http_client
+        )
+
+        # Fetch general calendar for comparison to identify particular celebrations
+        general_request = CalendarFetchRequest(
+            calendar_type=CalendarType.GENERAL_ROMAN,
+            calendar_id="",
+            year=year_int,
+            target_locale=locale,
+            year_type=YearType.LITURGICAL,
+        )
+        general_data = await fetch_calendar_data(
+            general_request, calendar_cache, http_client
+        )
+
+        # Mark celebrations that are particular to this national calendar
+        enriched_data = mark_particular_celebrations(national_data, general_data)
 
         # Format and return response
-        return format_calendar_summary(data)
+        return format_calendar_summary(enriched_data)
 
     except ValueError as e:
         logger.exception("Error")
@@ -165,6 +187,7 @@ async def get_diocesan_calendar(
 ) -> str:
     """
     Retrieve the liturgical calendar for a specific diocese and year, and optional locale.
+    List all of the particular celebrations, do not remove any of them.
 
     Parameters:
     - diocese: Diocese ID like 'romamo_it' for Diocese of Rome.
@@ -187,18 +210,35 @@ async def get_diocesan_calendar(
             locale,
         )
 
-        # Fetch calendar data using helper function
-        request = CalendarFetchRequest(
+        # Fetch diocesan calendar data using helper function
+        diocesan_request = CalendarFetchRequest(
             calendar_type=CalendarType.DIOCESAN,
             calendar_id=diocese_id,
             year=year_int,
             target_locale=locale,
             year_type=YearType.LITURGICAL,
         )
-        data = await fetch_calendar_data(request, calendar_cache, http_client)
+        diocesan_data = await fetch_calendar_data(
+            diocesan_request, calendar_cache, http_client
+        )
+
+        # Fetch general calendar for comparison to identify particular celebrations
+        general_request = CalendarFetchRequest(
+            calendar_type=CalendarType.GENERAL_ROMAN,
+            calendar_id="",
+            year=year_int,
+            target_locale=locale,
+            year_type=YearType.LITURGICAL,
+        )
+        general_data = await fetch_calendar_data(
+            general_request, calendar_cache, http_client
+        )
+
+        # Mark celebrations that are particular to this diocesan calendar
+        enriched_data = mark_particular_celebrations(diocesan_data, general_data)
 
         # Format and return response
-        return format_calendar_summary(data)
+        return format_calendar_summary(enriched_data)
 
     except ValueError as e:
         logger.exception("Error")
