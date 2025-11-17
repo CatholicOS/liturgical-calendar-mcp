@@ -98,12 +98,11 @@ If however you are developing on WSL, you can use the following configuration:
   {
     "mcpServers": {
       "litcal": {
-        "command": "wsl.exe",
-          "args": [
-            "bash",
-            "-c",
-            "~/[path]/liturgical-calendar-mcp/venv/bin/python ~/[path]/liturgical-calendar-mcp/litcal_server.py"
-          ]
+        "command": "wsl",
+        "args": [
+          "~/[path]/liturgical-calendar-mcp/venv/bin/python",
+          "~/[path]/liturgical-calendar-mcp/litcal_server.py"
+        ]
       }
     }
   }
